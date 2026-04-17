@@ -14,6 +14,14 @@ pip install -e .[dev]
 dc-run full --config configs/experiment.yaml
 ```
 
+```bash
+dc-run pilot --config configs/pilot.yaml --sample-size 30 --dry-run true
+```
+
+```bash
+dc-run first-experiment --config configs/first_experiment.yaml --sample-size 50
+```
+
 ## Core ideas
 
 - Branches: `pure_recycling`, `anchor_5`, `anchor_10`

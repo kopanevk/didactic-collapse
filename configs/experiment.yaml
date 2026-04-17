@@ -18,10 +18,10 @@ models:
       role: subject
 
 judge:
-  provider: openai_compatible
-  model_name: gpt-4.1-mini
-  base_url: https://api.example.com/v1
-  api_key_env: JUDGE_API_KEY
+  provider: gemini_openai_compatible
+  model_name: gemini-2.5-flash
+  base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  api_key_env: GEMINI_API_KEY
   timeout_sec: 60
   max_retries: 3
 
