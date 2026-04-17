@@ -1,0 +1,46 @@
+﻿project:
+  name: didactic_collapse
+  seed: 42
+  run_tag: pilot
+
+paths:
+  data_root: data
+  output_root: outputs
+  prompt_dir: configs/prompts
+
+models:
+  local_models:
+    - name: qwen2.5:0.5b
+      role: subject
+
+judge:
+  provider: mock
+  model_name: mock-judge
+  base_url: mock://local
+  api_key_env: MOCK_UNUSED
+  timeout_sec: 10
+  max_retries: 1
+
+sampling:
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 128
+
+experiment:
+  generations: 1
+  branches:
+    - name: pure_recycling
+      anchor_ratio: 0.0
+    - name: anchor_10
+      anchor_ratio: 0.10
+
+dataset:
+  source: gsm8k
+  base_train_size: 50
+  anchor_pool_size: 80
+  heldout_test_size: 50
+
+runtime:
+  force_recompute: false
+  save_parquet: true
+  save_csv: true
