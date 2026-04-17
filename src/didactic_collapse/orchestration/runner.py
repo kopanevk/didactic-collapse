@@ -15,7 +15,11 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from didactic_collapse.analysis.aggregate import aggregate_metrics
 from didactic_collapse.analysis.plots import plot_metric_by_generation
 from didactic_collapse.clients.base import JudgeClient
-from didactic_collapse.clients.judge_client import MockJudgeClient, OpenAICompatibleJudgeClient
+from didactic_collapse.clients.judge_client import (
+    MockJudgeClient,
+    OpenAICompatibleJudgeClient,
+    build_gemini_judge_client,
+)
 from didactic_collapse.clients.ollama_client import OllamaClient
 from didactic_collapse.config.settings import AppConfig
 from didactic_collapse.judging.accuracy import evaluate_accuracy
@@ -201,6 +205,12 @@ class ExperimentRunner:
             provider = self.cfg.judge.provider.strip().lower()
             if provider in {"mock", "stub", "mock_judge"}:
                 self._judge_client = MockJudgeClient()
+            elif provider in {"gemini", "gemini_sdk", "gemini_openai_compatible"}:
+                # Even for legacy provider names, use official Gemini SDK auth path only.
+                self._judge_client = build_gemini_judge_client(
+                    model_name=self.cfg.judge.model_name,
+                    api_key_env=self.cfg.judge.api_key_env,
+                )
             else:
                 self._judge_client = OpenAICompatibleJudgeClient(
                     base_url=self.cfg.judge.base_url,
@@ -556,7 +566,11 @@ class ExperimentRunner:
             logger.info("Skipping completed stage %s", stage_name)
             return StageStatus.COMPLETED
 
-        if record.status in (StageStatus.PENDING, StageStatus.RUNNING, StageStatus.FAILED) and not force:
+        if (
+            stage_name != "data_prep"
+            and record.status in (StageStatus.PENDING, StageStatus.RUNNING, StageStatus.FAILED)
+            and not force
+        ):
             self._assert_no_partial_outputs(stage_name, output_paths)
 
         for input_path in input_paths:

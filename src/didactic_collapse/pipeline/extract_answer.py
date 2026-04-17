@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import re
 from typing import Iterable
 
+import pandas as pd
+
 _NUMERIC_TOKEN_RE = re.compile(r"[-+]?\d+(?:\.\d+)?(?:\s*/\s*[-+]?\d+)?")
 _EXPLICIT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
@@ -63,11 +65,11 @@ def _extract_numeric_token(fragment: str) -> str | None:
     return token
 
 
-def normalize_extracted_answer(raw_answer: str | None) -> str | None:
+def normalize_extracted_answer(raw_answer: object) -> str | None:
     """Normalize extracted raw answer to numeric token when possible."""
-    if raw_answer is None:
+    if raw_answer is None or pd.isna(raw_answer):
         return None
-    return _extract_numeric_token(raw_answer)
+    return _extract_numeric_token(str(raw_answer))
 
 
 def _collect_candidates(text: str) -> list[_Candidate]:

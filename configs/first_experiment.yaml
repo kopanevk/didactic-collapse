@@ -14,7 +14,7 @@ models:
       role: subject
 
 judge:
-  provider: gemini_openai_compatible
+  provider: gemini_sdk
   model_name: gemini-2.5-flash
   base_url: https://generativelanguage.googleapis.com/v1beta/openai
   api_key_env: GEMINI_API_KEY

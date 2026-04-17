@@ -1,0 +1,2 @@
+[console_scripts]
+dc-run = didactic_collapse.orchestration.cli:app

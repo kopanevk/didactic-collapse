@@ -267,3 +267,74 @@ def run_first_experiment(*, cfg: AppConfig, sample_size: int) -> FirstExperiment
         qualitative_path_csv=qual_csv,
         qualitative_path_parquet=qual_parquet,
     )
+
+
+def resume_first_experiment(*, cfg: AppConfig, run_dir: Path) -> FirstExperimentSummary:
+    """Resume first experiment from existing run dir using checkpoint manifests."""
+    _ensure_real_judge_provider(cfg)
+    if not run_dir.exists():
+        raise FileNotFoundError(f"Run directory not found: {run_dir}")
+
+    snapshot_path = run_dir / "run_config.snapshot.json"
+    if not snapshot_path.exists():
+        raise FileNotFoundError(f"Missing run snapshot for resume: {snapshot_path}")
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    snapshot_cfg = AppConfig.model_validate(snapshot["config"])
+    snapshot_data_root = Path(snapshot_cfg.paths.data_root)
+
+    # Preserve exact config lineage from snapshot to satisfy strict manifest hash checks.
+    exp_cfg = snapshot_cfg
+    runner = ExperimentRunner(exp_cfg, run_dir=run_dir)
+
+    model_name = exp_cfg.models.local_models[0].name
+    branches = [b.name for b in exp_cfg.experiment.branches]
+    generations = [0, 1]
+
+    runner.run_stage("data_prep")
+    for branch in branches:
+        for gen in generations:
+            runner.resume_from_checkpoint(
+                model_name=model_name,
+                branch=branch,
+                generation=gen,
+                seed=exp_cfg.project.seed,
+                force=exp_cfg.runtime.force_recompute,
+            )
+    runner.run_stage("aggregate", force=exp_cfg.runtime.force_recompute)
+    runner.run_stage("plotting", force=exp_cfg.runtime.force_recompute)
+
+    all_eval = pd.read_parquet(runner.ctx.run_dir / "all_eval_merged.parquet")
+    summary_csv, summary_parquet, summary_df = _export_first_summary_table(
+        all_eval=all_eval,
+        out_dir=runner.ctx.run_dir / "tables",
+    )
+    qual_csv, qual_parquet = _export_qualitative_candidates(
+        all_eval=all_eval,
+        out_dir=runner.ctx.run_dir / "tables",
+    )
+
+    validate_first_experiment_outputs(
+        run_dir=runner.ctx.run_dir,
+        model_name=model_name,
+        branches=branches,
+        generations=generations,
+        summary_table=summary_df,
+    )
+
+    used_sample_size = int(len(pd.read_parquet(snapshot_data_root / "splits" / "heldout_test.parquet")))
+    requested_size = int(snapshot.get("config", {}).get("dataset", {}).get("heldout_test_size", used_sample_size))
+
+    return FirstExperimentSummary(
+        run_dir=runner.ctx.run_dir,
+        data_root_used=snapshot_data_root,
+        model_name=model_name,
+        branches=branches,
+        generations=generations,
+        sample_size_requested=requested_size,
+        sample_size_used=used_sample_size,
+        total_examples_scored=int(len(all_eval)),
+        summary_table_path_csv=summary_csv,
+        summary_table_path_parquet=summary_parquet,
+        qualitative_path_csv=qual_csv,
+        qualitative_path_parquet=qual_parquet,
+    )

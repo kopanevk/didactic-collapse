@@ -1,0 +1,12 @@
+{
+  "created_at_utc": "2026-04-17T16:14:59.957035+00:00",
+  "source_dataset": "gsm8k",
+  "source_config": "main",
+  "seed": 42,
+  "requested_sizes": {
+    "base_train": 500,
+    "anchor_pool": 300,
+    "heldout_test": 200
+  },
+  "total_rows": 8792
+}

@@ -4,8 +4,9 @@ from pathlib import Path
 
 import typer
 
+from didactic_collapse.clients.judge_client import gemini_judge_auth_smoke_check
 from didactic_collapse.config.settings import load_config
-from didactic_collapse.orchestration.first_experiment import run_first_experiment
+from didactic_collapse.orchestration.first_experiment import run_first_experiment, resume_first_experiment
 from didactic_collapse.orchestration.pilot import run_pilot
 from didactic_collapse.orchestration.runner import ExperimentRunner
 from didactic_collapse.utils.logging_utils import setup_logging
@@ -107,6 +108,44 @@ def first_experiment(
     typer.echo(f"Summary Parquet: {summary.summary_table_path_parquet}")
     typer.echo(f"Qualitative CSV: {summary.qualitative_path_csv}")
     typer.echo(f"Qualitative Parquet: {summary.qualitative_path_parquet}")
+
+
+@app.command()
+def first_experiment_resume(
+    config: str = "configs/first_experiment.yaml",
+    run_dir: str = "",
+) -> None:
+    """Resume first experiment from existing run dir via checkpoint manifests."""
+    if not run_dir:
+        raise typer.BadParameter("run_dir is required")
+
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "first_experiment_latest.log"
+    setup_logging(log_file)
+    summary = resume_first_experiment(cfg=cfg, run_dir=Path(run_dir))
+
+    typer.echo("First real experiment resumed")
+    typer.echo(f"Run dir: {summary.run_dir}")
+    typer.echo(f"Summary CSV: {summary.summary_table_path_csv}")
+    typer.echo(f"Qualitative CSV: {summary.qualitative_path_csv}")
+
+
+@app.command()
+def judge_auth_check(config: str = "configs/first_experiment.yaml") -> None:
+    """Preflight Gemini judge auth using the same SDK auth path as pipeline."""
+    cfg = load_config(config)
+    provider = cfg.judge.provider.strip().lower()
+    if provider not in {"gemini", "gemini_sdk", "gemini_openai_compatible"}:
+        raise typer.BadParameter(
+            f"judge_auth_check supports Gemini providers only. Current provider: {cfg.judge.provider}"
+        )
+
+    text = gemini_judge_auth_smoke_check(
+        model_name=cfg.judge.model_name,
+        api_key_env=cfg.judge.api_key_env,
+    )
+    typer.echo("Gemini judge auth check succeeded.")
+    typer.echo(f"Response preview: {text[:120].replace(chr(10), ' ')}")
 
 
 if __name__ == "__main__":

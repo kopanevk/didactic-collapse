@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import socket
 from typing import Any
 
 import httpx
@@ -19,6 +20,18 @@ logger = logging.getLogger(__name__)
 
 class JudgeResponseValidationError(ValueError):
     """Raised when judge response cannot be safely parsed/validated/repaired."""
+
+
+class GeminiAuthConfigurationError(RuntimeError):
+    """Raised when Gemini auth configuration is missing/ambiguous/unsupported."""
+
+
+class GeminiJudgeRequestError(RuntimeError):
+    """Raised when Gemini SDK request fails with categorized diagnostics."""
+
+    def __init__(self, *, category: str, message: str) -> None:
+        super().__init__(message)
+        self.category = category
 
 
 class JudgeRubricScore(BaseModel):
@@ -70,8 +83,132 @@ class JudgeParseResult:
     repair_actions: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class GeminiAuthPreflightResult:
+    """Safe auth diagnostics for Gemini credential setup."""
+
+    selected_mode: str
+    selected_source: str
+    selected_key_fingerprint: str
+    present_sources: tuple[str, ...]
+
+
 _FENCED_JSON_RE = re.compile(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", re.IGNORECASE)
 _INT_LIKE_RE = re.compile(r"^[+-]?\d+$")
+
+
+def _mask_secret(secret: str) -> str:
+    if len(secret) <= 6:
+        return "*" * len(secret)
+    return f"{secret[:4]}...{secret[-2:]}"
+
+
+def preflight_validate_gemini_auth(
+    *, api_key_env: str = "GEMINI_API_KEY", explicit_api_key: str | None = None
+) -> GeminiAuthPreflightResult:
+    """Validate that exactly one supported Gemini auth source is configured."""
+    explicit = (explicit_api_key or "").strip()
+    env_primary = (os.getenv(api_key_env) or "").strip()
+    env_gemini = (os.getenv("GEMINI_API_KEY") or "").strip()
+    env_google = (os.getenv("GOOGLE_API_KEY") or "").strip()
+    adc = (os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or "").strip()
+    vertex_mode = (os.getenv("GOOGLE_GENAI_USE_VERTEXAI") or "").strip().lower()
+
+    present_sources: list[str] = []
+    key_candidates: list[tuple[str, str]] = []
+
+    if explicit:
+        present_sources.append("explicit_api_key")
+        key_candidates.append(("explicit_api_key", explicit))
+    if env_primary:
+        present_sources.append(f"env:{api_key_env}")
+        key_candidates.append((f"env:{api_key_env}", env_primary))
+    if api_key_env != "GEMINI_API_KEY" and env_gemini:
+        present_sources.append("env:GEMINI_API_KEY")
+        key_candidates.append(("env:GEMINI_API_KEY", env_gemini))
+    if env_google:
+        present_sources.append("env:GOOGLE_API_KEY")
+        key_candidates.append(("env:GOOGLE_API_KEY", env_google))
+    if adc:
+        present_sources.append("env:GOOGLE_APPLICATION_CREDENTIALS")
+    if vertex_mode in {"1", "true", "yes"}:
+        present_sources.append("env:GOOGLE_GENAI_USE_VERTEXAI")
+
+    # API-key path only: do not allow mixing with ADC.
+    if adc and key_candidates:
+        raise GeminiAuthConfigurationError(
+            "Multiple auth sources found for Gemini (API key + ADC). "
+            "Use exactly one auth path."
+        )
+    if adc and not key_candidates:
+        raise GeminiAuthConfigurationError(
+            "Unsupported auth mode for this project: ADC-only configuration detected. "
+            "Use API key auth via GEMINI_API_KEY."
+        )
+    if vertex_mode in {"1", "true", "yes"}:
+        raise GeminiAuthConfigurationError(
+            "Unsupported auth mode for this project: Vertex AI mode detected "
+            "(GOOGLE_GENAI_USE_VERTEXAI=true). Use API key auth path only."
+        )
+    if not key_candidates:
+        raise GeminiAuthConfigurationError(
+            f"No API key found for Gemini. Set {api_key_env} or pass explicit api_key."
+        )
+    if len(key_candidates) > 1:
+        raise GeminiAuthConfigurationError(
+            "Multiple API key sources found for Gemini. "
+            "Keep exactly one source and clear others."
+        )
+
+    selected_source, selected_key = key_candidates[0]
+
+    result = GeminiAuthPreflightResult(
+        selected_mode="api_key",
+        selected_source=selected_source,
+        selected_key_fingerprint=_mask_secret(selected_key),
+        present_sources=tuple(present_sources),
+    )
+    logger.info(
+        "gemini_auth_preflight mode=%s source=%s key=%s present=%s",
+        result.selected_mode,
+        result.selected_source,
+        result.selected_key_fingerprint,
+        ",".join(result.present_sources),
+    )
+    return result
+
+
+def _classify_gemini_exception(exc: Exception) -> tuple[str, str]:
+    """Classify Gemini SDK failures into actionable categories."""
+    raw = str(exc) or exc.__class__.__name__
+    msg = raw.lower()
+
+    if "multiple authentication credentials" in msg:
+        return (
+            "multiple_auth_credentials",
+            "Gemini auth failed: multiple authentication credentials detected. "
+            "Keep exactly one API key source.",
+        )
+    if "invalid api key" in msg or "api key not valid" in msg or "permission denied" in msg:
+        return (
+            "invalid_api_key",
+            "Gemini auth failed: API key rejected by provider.",
+        )
+    if "quota" in msg or "rate limit" in msg or "resource exhausted" in msg:
+        return (
+            "quota_or_rate_limit",
+            "Gemini request failed due to quota/rate limit.",
+        )
+    if "model" in msg and ("not found" in msg or "unavailable" in msg or "unsupported" in msg):
+        return (
+            "model_unavailable",
+            "Gemini request failed: configured model is unavailable or unsupported.",
+        )
+    if isinstance(exc, (httpx.TimeoutException, TimeoutError, socket.timeout)):
+        return ("network_timeout", "Gemini request timed out.")
+    if isinstance(exc, (httpx.TransportError, OSError)):
+        return ("network_transport", "Gemini request failed due to network/transport error.")
+    return ("sdk_misconfiguration_or_unknown", f"Gemini SDK call failed: {raw}")
 
 
 def _extract_first_json_object(raw_text: str) -> tuple[str, bool, str]:
@@ -87,7 +224,6 @@ def _extract_first_json_object(raw_text: str) -> tuple[str, bool, str]:
     if fenced_match:
         return fenced_match.group(1).strip(), True, "extracted_fenced_json"
 
-    # Balanced-brace extraction for prose+JSON responses.
     in_string = False
     escaped = False
     depth = 0
@@ -154,7 +290,6 @@ def _safe_int(value: Any, field_name: str) -> tuple[int, bool]:
 
 
 def _repair_payload(raw_payload: dict[str, Any]) -> tuple[dict[str, Any], tuple[str, ...]]:
-    """Apply bounded safe repairs only (no guessing, no score invention)."""
     required_fields = {
         "clarity",
         "structure",
@@ -200,7 +335,6 @@ def _repair_payload(raw_payload: dict[str, Any]) -> tuple[dict[str, Any], tuple[
 
 
 def parse_and_validate_judge_response(raw_text: str) -> JudgeParseResult:
-    """Parse, repair (bounded), and validate judge output into typed rubric score."""
     json_text, extracted, extraction_action = _extract_first_json_object(raw_text)
     raw_payload = _parse_json_dict(json_text)
     repaired_payload, repair_actions = _repair_payload(raw_payload)
@@ -223,6 +357,8 @@ def parse_and_validate_judge_response(raw_text: str) -> JudgeParseResult:
 
 
 class OpenAICompatibleJudgeClient(JudgeClient):
+    """Generic OpenAI-compatible judge client (not for Gemini auth path)."""
+
     def __init__(
         self,
         *,
@@ -273,27 +409,10 @@ class OpenAICompatibleJudgeClient(JudgeClient):
         resp = self._http.post(f"{self._base_url}/chat/completions", json=payload)
         resp.raise_for_status()
         data = resp.json()
-
         raw_content = self._extract_content_from_api_response(data)
-
-        try:
-            parsed = parse_and_validate_judge_response(raw_content)
-        except JudgeResponseValidationError as exc:
-            if "schema validation failed" in str(exc):
-                logger.error("judge_schema_violation error=%s", exc)
-            else:
-                logger.error("judge_parse_failure error=%s", exc)
-            raise
-
-        if parsed.repair_applied:
-            logger.warning(
-                "judge_repair_applied actions=%s",
-                ",".join(parsed.repair_actions),
-            )
-        return parsed
+        return parse_and_validate_judge_response(raw_content)
 
     def score(self, *, question: str, gold_answer: str, model_output: str, rubric_prompt: str) -> dict:
-        """Backward-compatible dict API used by existing pipeline."""
         parsed = self.score_typed(
             question=question,
             gold_answer=gold_answer,
@@ -301,6 +420,88 @@ class OpenAICompatibleJudgeClient(JudgeClient):
             rubric_prompt=rubric_prompt,
         )
         return parsed.score.model_dump()
+
+
+class GeminiJudgeClient(JudgeClient):
+    """Gemini judge client using official google-genai SDK with API key auth only."""
+
+    def __init__(
+        self,
+        *,
+        model_name: str,
+        api_key_env: str = "GEMINI_API_KEY",
+        explicit_api_key: str | None = None,
+    ) -> None:
+        try:
+            from google import genai
+        except ImportError as exc:
+            raise RuntimeError("google-genai is required for Gemini judge provider") from exc
+
+        preflight = preflight_validate_gemini_auth(
+            api_key_env=api_key_env,
+            explicit_api_key=explicit_api_key,
+        )
+        key = (explicit_api_key or os.getenv(api_key_env) or os.getenv("GOOGLE_API_KEY") or "").strip()
+        self._model_name = model_name
+        self._preflight = preflight
+        self._client = genai.Client(api_key=key)
+
+    def _generate_content(self, prompt: str) -> Any:
+        try:
+            return self._client.models.generate_content(
+                model=self._model_name,
+                contents=prompt,
+            )
+        except Exception as exc:  # noqa: BLE001
+            category, message = _classify_gemini_exception(exc)
+            logger.error("gemini_judge_request_failed category=%s detail=%s", category, str(exc))
+            raise GeminiJudgeRequestError(category=category, message=message) from exc
+
+    def _extract_text(self, response: Any) -> str:
+        text = getattr(response, "text", None)
+        if isinstance(text, str) and text.strip():
+            return text
+        # Last-resort stringify for diagnostics; validator will still enforce JSON.
+        return str(response)
+
+    @retry(wait=wait_exponential(min=1, max=20), stop=stop_after_attempt(3))
+    def score(self, *, question: str, gold_answer: str, model_output: str, rubric_prompt: str) -> dict:
+        prompt = (
+            f"{rubric_prompt}\n\n"
+            "Return strict JSON only.\n"
+            f"Question: {question}\n"
+            f"Gold answer: {gold_answer}\n"
+            f"Model output: {model_output}\n"
+        )
+        response = self._generate_content(prompt)
+        parsed = parse_and_validate_judge_response(self._extract_text(response))
+        if parsed.repair_applied:
+            logger.warning("judge_repair_applied actions=%s", ",".join(parsed.repair_actions))
+        return parsed.score.model_dump()
+
+    def smoke_check(self) -> str:
+        response = self._generate_content("Respond with JSON only: {\"ok\": true}")
+        return self._extract_text(response)
+
+
+def build_gemini_judge_client(
+    *,
+    model_name: str,
+    api_key_env: str = "GEMINI_API_KEY",
+    explicit_api_key: str | None = None,
+) -> GeminiJudgeClient:
+    """Factory for Gemini judge client used by both smoke-check and pipeline."""
+    return GeminiJudgeClient(
+        model_name=model_name,
+        api_key_env=api_key_env,
+        explicit_api_key=explicit_api_key,
+    )
+
+
+def gemini_judge_auth_smoke_check(*, model_name: str, api_key_env: str = "GEMINI_API_KEY") -> str:
+    """Run minimal Gemini SDK call via the same auth path as judge pipeline."""
+    client = build_gemini_judge_client(model_name=model_name, api_key_env=api_key_env)
+    return client.smoke_check()
 
 
 class MockJudgeClient(JudgeClient):

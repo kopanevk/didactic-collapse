@@ -150,7 +150,16 @@ def test_validate_first_experiment_outputs_fails_on_missing_generation(tmp_path:
                 "accuracy_mean": 0.5,
                 "pedagogical_score_mean": 4.0,
                 "silent_error_rate": 0.1,
-            }
+            },
+            {
+                "model_name": model_name,
+                "branch": "anchor_10",
+                "generation": 0,
+                "sample_count": 12,
+                "accuracy_mean": 0.4,
+                "pedagogical_score_mean": 3.8,
+                "silent_error_rate": 0.2,
+            },
         ]
     )
 

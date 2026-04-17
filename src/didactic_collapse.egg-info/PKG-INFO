@@ -1,3 +1,26 @@
+Metadata-Version: 2.4
+Name: didactic-collapse
+Version: 0.1.0
+Summary: Research pipeline for didactic collapse under synthetic self-recycling
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.8
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: pandas>=2.2
+Requires-Dist: pyarrow>=16.1
+Requires-Dist: httpx>=0.27
+Requires-Dist: tenacity>=8.3
+Requires-Dist: typer>=0.12
+Requires-Dist: orjson>=3.10
+Requires-Dist: google-genai>=1.0
+Requires-Dist: matplotlib>=3.8
+Requires-Dist: seaborn>=0.13
+Requires-Dist: datasets>=2.20
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2; extra == "dev"
+Requires-Dist: ruff>=0.5; extra == "dev"
+Requires-Dist: mypy>=1.10; extra == "dev"
+
 ﻿# Didactic Collapse
 
 Research pipeline for studying degradation of pedagogical quality under iterative training on synthetic data, with Human Anchoring interventions.
