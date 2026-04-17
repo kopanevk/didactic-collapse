@@ -1,0 +1,13 @@
+﻿__pycache__/
+*.pyc
+.venv/
+.env
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+outputs/runs/*
+outputs/tables/*
+outputs/figures/*
+!outputs/runs/.gitkeep
+!outputs/tables/.gitkeep
+!outputs/figures/.gitkeep

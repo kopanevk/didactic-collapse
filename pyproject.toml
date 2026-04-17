@@ -1,0 +1,43 @@
+﻿[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "didactic-collapse"
+version = "0.1.0"
+description = "Research pipeline for didactic collapse under synthetic self-recycling"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.8",
+  "pyyaml>=6.0",
+  "pandas>=2.2",
+  "pyarrow>=16.1",
+  "httpx>=0.27",
+  "tenacity>=8.3",
+  "typer>=0.12",
+  "orjson>=3.10",
+  "matplotlib>=3.8",
+  "seaborn>=0.13"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "ruff>=0.5",
+  "mypy>=1.10"
+]
+
+[project.scripts]
+dc-run = "didactic_collapse.orchestration.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

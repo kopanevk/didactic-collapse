@@ -1,0 +1,21 @@
+﻿{
+  "type": "object",
+  "required": [
+    "clarity",
+    "structure",
+    "terminology",
+    "reasoning_soundness",
+    "overall_pedagogical_score",
+    "is_silent_error",
+    "comment"
+  ],
+  "properties": {
+    "clarity": {"type": "integer", "minimum": 0, "maximum": 2},
+    "structure": {"type": "integer", "minimum": 0, "maximum": 2},
+    "terminology": {"type": "integer", "minimum": 0, "maximum": 2},
+    "reasoning_soundness": {"type": "integer", "minimum": 0, "maximum": 2},
+    "overall_pedagogical_score": {"type": "integer", "minimum": 0, "maximum": 8},
+    "is_silent_error": {"type": "boolean"},
+    "comment": {"type": "string"}
+  }
+}

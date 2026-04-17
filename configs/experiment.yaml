@@ -1,0 +1,52 @@
+﻿project:
+  name: didactic_collapse
+  seed: 42
+  run_tag: baseline
+
+paths:
+  data_root: data
+  output_root: outputs
+  prompt_dir: configs/prompts
+
+models:
+  local_models:
+    - name: qwen2.5:0.5b
+      role: subject
+    - name: smollm2:360m
+      role: subject
+    - name: smollm2:1.7b
+      role: subject
+
+judge:
+  provider: openai_compatible
+  model_name: gpt-4.1-mini
+  base_url: https://api.example.com/v1
+  api_key_env: JUDGE_API_KEY
+  timeout_sec: 60
+  max_retries: 3
+
+sampling:
+  temperature: 0.2
+  top_p: 0.9
+  max_tokens: 512
+
+experiment:
+  generations: 3
+  branches:
+    - name: pure_recycling
+      anchor_ratio: 0.0
+    - name: anchor_5
+      anchor_ratio: 0.05
+    - name: anchor_10
+      anchor_ratio: 0.10
+
+dataset:
+  source: gsm8k
+  base_train_size: 3000
+  anchor_pool_size: 1000
+  heldout_test_size: 1000
+
+runtime:
+  force_recompute: false
+  save_parquet: true
+  save_csv: true
