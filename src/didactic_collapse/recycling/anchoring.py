@@ -109,6 +109,32 @@ def validate_anchor_split_safety(
         raise AnchoringError("Selected anchors overlap with heldout_test")
 
 
+def _validate_anchor_pool_integrity(
+    *,
+    anchor_pool_df: pd.DataFrame,
+    synthetic_df: pd.DataFrame,
+    base_train_df: pd.DataFrame,
+    heldout_test_df: pd.DataFrame,
+) -> None:
+    """Fail fast when anchor_pool itself is contaminated with forbidden IDs."""
+    pool_ids = set(anchor_pool_df["example_id"])
+    synth_ids = set(synthetic_df["example_id"])
+    base_ids = set(base_train_df["example_id"])
+    heldout_ids = set(heldout_test_df["example_id"])
+
+    overlap_pool_base = pool_ids.intersection(base_ids)
+    overlap_pool_heldout = pool_ids.intersection(heldout_ids)
+    overlap_pool_synth = pool_ids.intersection(synth_ids)
+
+    if overlap_pool_base or overlap_pool_heldout or overlap_pool_synth:
+        raise AnchoringError(
+            "anchor_pool integrity violation: overlap with forbidden pools "
+            f"(pool∩base={len(overlap_pool_base)}, "
+            f"pool∩heldout={len(overlap_pool_heldout)}, "
+            f"pool∩synthetic={len(overlap_pool_synth)})"
+        )
+
+
 def select_human_anchors(
     *,
     anchor_pool_df: pd.DataFrame,
@@ -131,6 +157,14 @@ def select_human_anchors(
 
     _check_unique_example_ids(anchor_pool_df, "anchor_pool_df")
     _check_unique_example_ids(synthetic_df, "synthetic_df")
+    _check_unique_example_ids(base_train_df, "base_train_df")
+    _check_unique_example_ids(heldout_test_df, "heldout_test_df")
+    _validate_anchor_pool_integrity(
+        anchor_pool_df=anchor_pool_df,
+        synthetic_df=synthetic_df,
+        base_train_df=base_train_df,
+        heldout_test_df=heldout_test_df,
+    )
 
     synthetic_count = len(synthetic_df)
     if synthetic_count == 0:

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from pathlib import Path
+import re
 from typing import Any
 
 import pandas as pd
@@ -29,6 +30,9 @@ class AccuracyResult:
     parse_failure_reason: str | None
 
 
+_GSM8K_FINAL_MARKER_RE = re.compile(r"####\s*([^\n\r]+)")
+
+
 def _to_fraction(token: str) -> Fraction:
     """Convert numeric token to exact Fraction (int/decimal/fraction)."""
     if "/" in token:
@@ -52,6 +56,24 @@ def _safe_parse_numeric(token: str | None) -> Fraction | None:
         return None
 
 
+def normalize_gold_answer(gold_answer: str) -> str | None:
+    """Normalize GSM8K-style gold answer text to final numeric target.
+
+    GSM8K `answer` often contains chain-of-thought with many intermediate numbers
+    and final target after `####`. We must extract from the final marker to avoid
+    comparing against the first intermediate number.
+    """
+    text = str(gold_answer)
+    marker_match = _GSM8K_FINAL_MARKER_RE.search(text)
+    if marker_match:
+        marker_segment = marker_match.group(1)
+        normalized = normalize_extracted_answer(marker_segment)
+        if normalized is not None:
+            return normalized
+    # Fallback for non-GSM8K style golds.
+    return normalize_extracted_answer(text)
+
+
 def score_prediction(
     *,
     model_output: str,
@@ -67,7 +89,8 @@ def score_prediction(
     - Prefer explicit parse failure over uncertain guess
     """
     pred_extraction: ExtractedAnswer
-    if parsed_final_answer is not None:
+    has_provided_parsed = parsed_final_answer is not None and not pd.isna(parsed_final_answer)
+    if has_provided_parsed:
         normalized = normalize_extracted_answer(parsed_final_answer)
         if normalized is None:
             pred_extraction = ExtractedAnswer(
@@ -88,7 +111,7 @@ def score_prediction(
     else:
         pred_extraction = extract_final_answer_result(model_output)
 
-    normalized_gold = normalize_extracted_answer(gold_answer)
+    normalized_gold = normalize_gold_answer(gold_answer)
     gold_value = _safe_parse_numeric(normalized_gold)
     if normalized_gold is None or gold_value is None:
         return AccuracyResult(
@@ -130,7 +153,38 @@ def score_prediction(
 
 def evaluate_accuracy(outputs_df: pd.DataFrame, gold_df: pd.DataFrame, out_path: Path) -> pd.DataFrame:
     """Compute robust accuracy table with explicit parse diagnostics."""
-    merged = outputs_df.merge(gold_df[["example_id", "answer_gold"]], on="example_id", how="left")
+    required_out = {"example_id", "raw_response"}
+    required_gold = {"example_id", "answer_gold"}
+    missing_out = required_out.difference(outputs_df.columns)
+    missing_gold = required_gold.difference(gold_df.columns)
+    if missing_out:
+        raise ValueError(f"outputs_df missing required columns: {sorted(missing_out)}")
+    if missing_gold:
+        raise ValueError(f"gold_df missing required columns: {sorted(missing_gold)}")
+
+    try:
+        merged = outputs_df.merge(
+            gold_df[["example_id", "answer_gold"]],
+            on="example_id",
+            how="left",
+            validate="one_to_one",
+            indicator=True,
+        )
+    except pd.errors.MergeError as exc:
+        dup_out_ids = outputs_df.loc[outputs_df["example_id"].duplicated(), "example_id"].astype(str).head(5).tolist()
+        dup_gold_ids = gold_df.loc[gold_df["example_id"].duplicated(), "example_id"].astype(str).head(5).tolist()
+        raise ValueError(
+            "Accuracy merge cardinality violation on example_id (expected one_to_one). "
+            f"sample_duplicate_outputs={dup_out_ids}, sample_duplicate_gold={dup_gold_ids}"
+        ) from exc
+    missing_gold_mask = merged["_merge"] != "both"
+    if missing_gold_mask.any():
+        missing_ids = merged.loc[missing_gold_mask, "example_id"].astype(str).head(5).tolist()
+        raise ValueError(
+            "Accuracy merge produced rows without gold answers. "
+            f"missing_count={int(missing_gold_mask.sum())}, sample_example_ids={missing_ids}"
+        )
+    merged = merged.drop(columns=["_merge"])
 
     scored_rows: list[dict[str, Any]] = []
     for rec in merged.to_dict(orient="records"):

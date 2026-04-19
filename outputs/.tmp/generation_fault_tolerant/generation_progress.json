@@ -1,0 +1,11 @@
+{
+  "stage": "generation",
+  "total_rows": 3,
+  "completed_rows": 2,
+  "failed_rows": 1,
+  "skipped_from_checkpoint": 3,
+  "processed_this_run": 0,
+  "partial_save_every_n": 1,
+  "max_row_failures": 1,
+  "continue_on_row_error": true
+}

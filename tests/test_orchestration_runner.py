@@ -1,6 +1,8 @@
 ﻿from __future__ import annotations
 
 import json
+import shutil
+import uuid
 from pathlib import Path
 
 import pandas as pd
@@ -66,6 +68,16 @@ def _make_cfg(tmp_path: Path) -> AppConfig:
     return AppConfig.model_validate(cfg_dict)
 
 
+def _make_cerebras_cfg(tmp_path: Path) -> AppConfig:
+    cfg = _make_cfg(tmp_path)
+    payload = cfg.model_dump(mode="python")
+    payload["judge"]["provider"] = "cerebras"
+    payload["judge"]["base_url"] = "https://api.cerebras.ai/v1"
+    payload["judge"]["api_key_env"] = "CEREBRAS_API_KEY"
+    payload["judge"]["model_name"] = "llama-3.1-8b"
+    return AppConfig.model_validate(payload)
+
+
 def _executor_factory(counter: dict[str, int]):
     def _exec(ctx: StageContext) -> StageExecutionResult:
         counter[ctx.stage_name] = counter.get(ctx.stage_name, 0) + 1
@@ -79,6 +91,22 @@ def _executor_factory(counter: dict[str, int]):
             ])
             ctx.artifacts["model_outputs"].parent.mkdir(parents=True, exist_ok=True)
             df.to_parquet(ctx.artifacts["model_outputs"], index=False)
+            df.to_parquet(ctx.artifacts["generation_partial"], index=False)
+            pd.DataFrame(
+                columns=[
+                    "run_id",
+                    "branch",
+                    "generation",
+                    "model_name",
+                    "example_id",
+                    "error_category",
+                    "error_message",
+                ]
+            ).to_parquet(ctx.artifacts["generation_failures"], index=False)
+            ctx.artifacts["generation_metadata"].write_text(
+                json.dumps({"stage": "generation", "total_rows": 1, "completed_rows": 1, "failed_rows": 0}),
+                encoding="utf-8",
+            )
             return StageExecutionResult(row_count=1)
 
         if ctx.stage_name == "answer_extraction":
@@ -120,6 +148,24 @@ def _executor_factory(counter: dict[str, int]):
                 }
             ])
             judge_df.to_parquet(ctx.artifacts["judge_outputs"], index=False)
+            judge_df.to_parquet(ctx.artifacts["judge_partial"], index=False)
+            pd.DataFrame(
+                columns=[
+                    "run_id",
+                    "branch",
+                    "generation",
+                    "model_name",
+                    "example_id",
+                    "judge_provider",
+                    "judge_model",
+                    "error_category",
+                    "error_message",
+                ]
+            ).to_parquet(ctx.artifacts["judge_failures"], index=False)
+            ctx.artifacts["judge_metadata"].write_text(
+                json.dumps({"stage": "judge", "total_rows": 1, "completed_rows": 1, "failed_rows": 0}),
+                encoding="utf-8",
+            )
             eval_df.to_parquet(ctx.artifacts["eval_merged"], index=False)
             return StageExecutionResult(row_count=1)
 
@@ -273,3 +319,167 @@ def test_lineage_mismatch_causes_explicit_failure(tmp_path: Path) -> None:
 
     with pytest.raises(OrchestrationError, match="Lineage mismatch"):
         runner.run_stage("generation", model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1)
+
+
+def test_provider_selection_for_cerebras_works(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    cfg = _make_cerebras_cfg(tmp_path)
+    runner = ExperimentRunner(cfg, run_dir=tmp_path / "run", stage_executors={})
+    calls: list[tuple[str, str, str]] = []
+
+    class _DummyJudgeClient:
+        def score(self, *, question: str, gold_answer: str, model_output: str, rubric_prompt: str) -> dict:
+            return {
+                "clarity": 0,
+                "structure": 0,
+                "terminology": 0,
+                "reasoning_soundness": 0,
+                "overall_pedagogical_score": 0,
+                "is_silent_error": False,
+                "comment": "dummy",
+            }
+
+    def _fake_build(
+        *,
+        model_name: str,
+        base_url: str,
+        api_key_env: str = "CEREBRAS_API_KEY",
+        timeout_sec: int = 60,
+        max_retries: int = 3,
+    ):
+        calls.append((model_name, base_url, api_key_env))
+        return _DummyJudgeClient()
+
+    monkeypatch.setattr("didactic_collapse.orchestration.runner.build_cerebras_judge_client", _fake_build)
+    _ = runner._get_judge_client()
+    assert calls == [("llama-3.1-8b", "https://api.cerebras.ai/v1", "CEREBRAS_API_KEY")]
+
+
+def test_synthetic_build_uses_heldout_question_column_contract(tmp_path: Path) -> None:
+    cfg = _make_cfg(tmp_path)
+
+    def _answer_extraction_exec(ctx: StageContext) -> StageExecutionResult:
+        df = pd.DataFrame(
+            [
+                {
+                    "example_id": "h1",
+                    "raw_response": "Final answer: 1",
+                }
+            ]
+        )
+        ctx.artifacts["answer_extraction"].parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(ctx.artifacts["answer_extraction"], index=False)
+        return StageExecutionResult(row_count=1)
+
+    runner = ExperimentRunner(
+        cfg,
+        run_dir=tmp_path / "run",
+        stage_executors={"answer_extraction": _answer_extraction_exec},
+    )
+
+    runner.run_stage("answer_extraction", model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1)
+    runner.run_stage("synthetic_build", model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1)
+
+    out_path = runner._step_dir(
+        model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1
+    ) / "synthetic_base.parquet"
+    out_df = pd.read_parquet(out_path)
+    assert out_df.loc[0, "question"] == "q"
+
+
+def test_judge_stage_row_level_resume_reuses_partial_progress() -> None:
+    base = Path("outputs/.tmp") / f"runner_row_resume_{uuid.uuid4().hex}"
+    base.mkdir(parents=True, exist_ok=True)
+    cfg = _make_cfg(base)
+    cfg.runtime.continue_on_row_error = True
+    cfg.runtime.partial_save_every_n = 1
+    cfg.runtime.max_row_failures = 0
+
+    split_dir = cfg.paths.data_root / "splits"
+    heldout = pd.DataFrame(
+        [
+            {"example_id": "ex1", "question": "1+0", "answer_gold": "1"},
+            {"example_id": "ex2", "question": "2-1", "answer_gold": "1"},
+            {"example_id": "ex3", "question": "3-2", "answer_gold": "1"},
+        ]
+    )
+    heldout.to_parquet(split_dir / "heldout_test.parquet", index=False)
+
+    runner = ExperimentRunner(cfg, run_dir=base / "run", stage_executors={})
+    step_dir = runner._step_dir(model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1)
+    step_dir.mkdir(parents=True, exist_ok=True)
+    outputs = pd.DataFrame(
+        [
+            {
+                "run_id": "r1",
+                "branch": "pure_recycling",
+                "generation": 1,
+                "model_name": "qwen2.5:0.5b",
+                "example_id": "ex1",
+                "raw_response": "good-1",
+            },
+            {
+                "run_id": "r1",
+                "branch": "pure_recycling",
+                "generation": 1,
+                "model_name": "qwen2.5:0.5b",
+                "example_id": "ex2",
+                "raw_response": "bad-2",
+            },
+            {
+                "run_id": "r1",
+                "branch": "pure_recycling",
+                "generation": 1,
+                "model_name": "qwen2.5:0.5b",
+                "example_id": "ex3",
+                "raw_response": "good-3",
+            },
+        ]
+    )
+    outputs.to_parquet(step_dir / "model_outputs.parquet", index=False)
+    pd.DataFrame(
+        [
+            {"example_id": "ex1", "is_correct": True},
+            {"example_id": "ex2", "is_correct": False},
+            {"example_id": "ex3", "is_correct": True},
+        ]
+    ).to_parquet(step_dir / "accuracy_table.parquet", index=False)
+
+    class _FailingJudge:
+        def __init__(self) -> None:
+            self.calls: dict[str, int] = {}
+
+        def score(self, *, question: str, gold_answer: str, model_output: str, rubric_prompt: str) -> dict:
+            self.calls[model_output] = self.calls.get(model_output, 0) + 1
+            if "bad-2" in model_output:
+                raise RuntimeError("simulated bad row")
+            return {
+                "clarity": 1,
+                "structure": 1,
+                "terminology": 1,
+                "reasoning_soundness": 1,
+                "overall_pedagogical_score": 4,
+                "is_silent_error": False,
+                "comment": "ok",
+            }
+
+    judge = _FailingJudge()
+    runner._judge_client = judge
+    runner._heldout_df = heldout
+    runner._judge_prompt = "rubric"
+
+    try:
+        with pytest.raises(RuntimeError, match="threshold exceeded"):
+            runner.run_stage("judge", model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1)
+
+        assert (step_dir / "judge_partial.parquet").exists()
+        assert (step_dir / "judge_failures.parquet").exists()
+        assert judge.calls == {"good-1": 1, "bad-2": 1}
+
+        cfg.runtime.max_row_failures = 1
+        runner.run_stage("judge", model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1)
+        assert judge.calls == {"good-1": 1, "bad-2": 1, "good-3": 1}
+
+        merged = pd.read_parquet(step_dir / "eval_merged.parquet")
+        assert set(merged["example_id"].tolist()) == {"ex1", "ex3"}
+    finally:
+        shutil.rmtree(base, ignore_errors=True)

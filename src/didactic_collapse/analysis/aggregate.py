@@ -6,6 +6,21 @@ import pandas as pd
 
 
 def aggregate_metrics(eval_df: pd.DataFrame, out_path: Path) -> pd.DataFrame:
+    required = {
+        "branch",
+        "generation",
+        "model_name",
+        "example_id",
+        "is_correct",
+        "overall_pedagogical_score",
+        "is_silent_error",
+    }
+    missing = required.difference(eval_df.columns)
+    if missing:
+        raise ValueError(f"aggregate input missing required columns: {sorted(missing)}")
+    if eval_df.empty:
+        raise ValueError("aggregate input is empty")
+
     agg = (
         eval_df.groupby(["branch", "generation", "model_name"], as_index=False)
         .agg(

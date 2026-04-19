@@ -18,6 +18,7 @@ from didactic_collapse.clients.base import JudgeClient
 from didactic_collapse.clients.judge_client import (
     MockJudgeClient,
     OpenAICompatibleJudgeClient,
+    build_cerebras_judge_client,
     build_gemini_judge_client,
 )
 from didactic_collapse.clients.ollama_client import OllamaClient
@@ -205,6 +206,14 @@ class ExperimentRunner:
             provider = self.cfg.judge.provider.strip().lower()
             if provider in {"mock", "stub", "mock_judge"}:
                 self._judge_client = MockJudgeClient()
+            elif provider == "cerebras":
+                self._judge_client = build_cerebras_judge_client(
+                    model_name=self.cfg.judge.model_name,
+                    base_url=self.cfg.judge.base_url,
+                    api_key_env=self.cfg.judge.api_key_env,
+                    timeout_sec=self.cfg.judge.timeout_sec,
+                    max_retries=self.cfg.judge.max_retries,
+                )
             elif provider in {"gemini", "gemini_sdk", "gemini_openai_compatible"}:
                 # Even for legacy provider names, use official Gemini SDK auth path only.
                 self._judge_client = build_gemini_judge_client(
@@ -217,6 +226,7 @@ class ExperimentRunner:
                     model_name=self.cfg.judge.model_name,
                     api_key_env=self.cfg.judge.api_key_env,
                     timeout_sec=self.cfg.judge.timeout_sec,
+                    max_retries=self.cfg.judge.max_retries,
                 )
         return self._judge_client
 
@@ -241,9 +251,15 @@ class ExperimentRunner:
     def _context_artifacts(self, step_dir: Path) -> dict[str, Path]:
         return {
             "model_outputs": step_dir / "model_outputs.parquet",
+            "generation_partial": step_dir / "generation_partial.parquet",
+            "generation_failures": step_dir / "generation_failures.parquet",
+            "generation_metadata": step_dir / "generation_progress.json",
             "answer_extraction": step_dir / "answer_extraction.parquet",
             "accuracy_table": step_dir / "accuracy_table.parquet",
             "judge_outputs": step_dir / "judge_outputs.parquet",
+            "judge_partial": step_dir / "judge_partial.parquet",
+            "judge_failures": step_dir / "judge_failures.parquet",
+            "judge_metadata": step_dir / "judge_progress.json",
             "eval_merged": step_dir / "eval_merged.parquet",
             "synthetic_base": step_dir / "synthetic_base.parquet",
             "synthetic_train_next": step_dir / "synthetic_train_next.parquet",
@@ -274,13 +290,24 @@ class ExperimentRunner:
                 artifacts["split_metadata"],
             ]
         if stage_name == "generation":
-            return [artifacts["model_outputs"]]
+            return [
+                artifacts["model_outputs"],
+                artifacts["generation_partial"],
+                artifacts["generation_failures"],
+                artifacts["generation_metadata"],
+            ]
         if stage_name == "answer_extraction":
             return [artifacts["answer_extraction"]]
         if stage_name == "accuracy":
             return [artifacts["accuracy_table"]]
         if stage_name == "judge":
-            return [artifacts["judge_outputs"], artifacts["eval_merged"]]
+            return [
+                artifacts["judge_outputs"],
+                artifacts["judge_partial"],
+                artifacts["judge_failures"],
+                artifacts["judge_metadata"],
+                artifacts["eval_merged"],
+            ]
         if stage_name == "synthetic_build":
             return [artifacts["synthetic_base"]]
         if stage_name == "anchoring":
@@ -472,11 +499,19 @@ class ExperimentRunner:
             artifacts=artifacts,
         )
 
+    def _artifact_must_be_non_empty(self, path: Path) -> bool:
+        # Failure artifacts may legitimately be empty while still being valid outputs.
+        return "failures" not in path.name
+
+    def _stage_supports_row_level_resume(self, stage_name: StageName) -> bool:
+        return stage_name in {"judge", "generation"}
+
     def _validate_stage_artifacts(self, output_paths: list[Path]) -> int | None:
         row_count: int | None = None
         for path in output_paths:
-            maybe_rows = _validate_readable_artifact(path, must_be_non_empty=True)
-            if maybe_rows is not None:
+            must_non_empty = self._artifact_must_be_non_empty(path)
+            maybe_rows = _validate_readable_artifact(path, must_be_non_empty=must_non_empty)
+            if maybe_rows is not None and must_non_empty:
                 row_count = maybe_rows if row_count is None else min(row_count, maybe_rows)
         return row_count
 
@@ -570,6 +605,7 @@ class ExperimentRunner:
             stage_name != "data_prep"
             and record.status in (StageStatus.PENDING, StageStatus.RUNNING, StageStatus.FAILED)
             and not force
+            and not self._stage_supports_row_level_resume(stage_name)
         ):
             self._assert_no_partial_outputs(stage_name, output_paths)
 
@@ -642,7 +678,7 @@ class ExperimentRunner:
                 continue
 
             if record.status in (StageStatus.PENDING, StageStatus.RUNNING, StageStatus.FAILED):
-                if not force:
+                if not force and not self._stage_supports_row_level_resume(stage_name):
                     self._assert_no_partial_outputs(stage_name, expected_outputs)
                 start_index = idx
                 break
@@ -690,11 +726,17 @@ class ExperimentRunner:
                 branch=context.branch,
                 generation=context.generation,
                 run_id=self.ctx.run_id,
-                prompt_version="v1",
+                prompt_version=self.cfg.runtime.generation_prompt_version,
                 temperature=self.cfg.sampling.temperature,
                 top_p=self.cfg.sampling.top_p,
                 max_tokens=self.cfg.sampling.max_tokens,
                 out_path=context.artifacts["model_outputs"],
+                partial_path=context.artifacts["generation_partial"],
+                failures_path=context.artifacts["generation_failures"],
+                metadata_path=context.artifacts["generation_metadata"],
+                partial_save_every_n=self.cfg.runtime.partial_save_every_n,
+                max_row_failures=self.cfg.runtime.max_row_failures,
+                continue_on_row_error=self.cfg.runtime.continue_on_row_error,
             )
             return StageExecutionResult(row_count=int(len(out_df)))
 
@@ -735,6 +777,13 @@ class ExperimentRunner:
                 judge_model=self.cfg.judge.model_name,
                 rubric_prompt=self._get_judge_prompt(),
                 out_path=context.artifacts["judge_outputs"],
+                request_delay_sec=self.cfg.judge.request_delay_sec,
+                partial_path=context.artifacts["judge_partial"],
+                failures_path=context.artifacts["judge_failures"],
+                metadata_path=context.artifacts["judge_metadata"],
+                partial_save_every_n=self.cfg.runtime.partial_save_every_n,
+                max_row_failures=self.cfg.runtime.max_row_failures,
+                continue_on_row_error=self.cfg.runtime.continue_on_row_error,
             )
 
             accuracy_df = pd.read_parquet(context.artifacts["accuracy_table"])
@@ -744,17 +793,65 @@ class ExperimentRunner:
                 how="left",
                 validate="one_to_one",
             )
+            missing_judge_mask = eval_df["overall_pedagogical_score"].isna() | eval_df["is_silent_error"].isna()
+            if missing_judge_mask.any():
+                missing_ids = eval_df.loc[missing_judge_mask, "example_id"].astype(str).head(5).tolist()
+                missing_count = int(missing_judge_mask.sum())
+                if (not self.cfg.runtime.continue_on_row_error) or (
+                    missing_count > self.cfg.runtime.max_row_failures
+                ):
+                    raise OrchestrationError(
+                        "Judge stage produced incomplete evaluation merge beyond allowed threshold. "
+                        f"missing_count={missing_count}, max_row_failures={self.cfg.runtime.max_row_failures}, "
+                        f"sample_example_ids={missing_ids}"
+                    )
+                logger.warning(
+                    "judge_eval_merge_dropping_failed_rows missing_count=%d sample_example_ids=%s",
+                    missing_count,
+                    missing_ids,
+                )
+                eval_df = eval_df.loc[~missing_judge_mask].copy()
+                if eval_df.empty:
+                    raise OrchestrationError(
+                        "Judge stage dropped all rows due to missing judge outputs after fault-tolerant processing."
+                    )
             eval_df.to_parquet(context.artifacts["eval_merged"], index=False)
             return StageExecutionResult(row_count=int(len(eval_df)))
 
         if stage_name == "synthetic_build":
             extracted_df = pd.read_parquet(context.artifacts["answer_extraction"])
-            heldout = self._get_heldout()[["example_id", "question"]]
-            merged = extracted_df.merge(heldout, on="example_id", how="left", suffixes=("", "_gold"))
+            heldout = self._get_heldout()[["example_id", "question"]].rename(columns={"question": "question_gold"})
+            try:
+                merged = extracted_df.merge(heldout, on="example_id", how="left", validate="one_to_one")
+            except pd.errors.MergeError as exc:
+                dup_extracted = (
+                    extracted_df.loc[extracted_df["example_id"].duplicated(), "example_id"]
+                    .astype(str)
+                    .head(5)
+                    .tolist()
+                )
+                dup_heldout = (
+                    heldout.loc[heldout["example_id"].duplicated(), "example_id"]
+                    .astype(str)
+                    .head(5)
+                    .tolist()
+                )
+                raise OrchestrationError(
+                    "Synthetic build merge cardinality violation on example_id (expected one_to_one). "
+                    f"sample_duplicate_extracted_ids={dup_extracted}, "
+                    f"sample_duplicate_heldout_ids={dup_heldout}"
+                ) from exc
+            missing_q_mask = merged["question_gold"].isna()
+            if missing_q_mask.any():
+                missing_ids = merged.loc[missing_q_mask, "example_id"].astype(str).head(5).tolist()
+                raise OrchestrationError(
+                    "Synthetic build merge missing heldout question text. "
+                    f"missing_count={int(missing_q_mask.sum())}, sample_example_ids={missing_ids}"
+                )
             synthetic_df = pd.DataFrame(
                 {
                     "example_id": merged["example_id"],
-                    "question": merged["question_gold"].fillna(merged.get("question", "")),
+                    "question": merged["question_gold"],
                     "answer_for_training": merged["raw_response"],
                     "source": "synthetic",
                 }
@@ -812,6 +909,23 @@ class ExperimentRunner:
                 raise OrchestrationError("No eval_merged artifacts found for aggregate stage")
             frames = [pd.read_parquet(p) for p in eval_paths]
             combined = pd.concat(frames, ignore_index=True)
+            required_cols = {"model_name", "branch", "generation", "example_id"}
+            missing = required_cols.difference(combined.columns)
+            if missing:
+                raise OrchestrationError(f"Aggregate input missing required columns: {sorted(missing)}")
+            dup_mask = combined.duplicated(subset=["model_name", "branch", "generation", "example_id"], keep=False)
+            if dup_mask.any():
+                sample = (
+                    combined.loc[dup_mask, ["model_name", "branch", "generation", "example_id"]]
+                    .astype(str)
+                    .head(5)
+                    .to_dict(orient="records")
+                )
+                raise OrchestrationError(
+                    "Aggregate stage detected duplicate eval keys "
+                    "(model_name, branch, generation, example_id). "
+                    f"duplicate_count={int(dup_mask.sum())}, sample={sample}"
+                )
             save_tabular(
                 combined,
                 self.ctx.run_dir / "all_eval_merged",
@@ -824,6 +938,8 @@ class ExperimentRunner:
         if stage_name == "plotting":
             metrics_path = self.ctx.run_dir / "tables" / "metrics_by_generation.csv"
             agg = pd.read_csv(metrics_path)
+            if agg.empty:
+                raise OrchestrationError("Plotting stage received empty metrics table")
             plot_metric_by_generation(agg, "accuracy", self.ctx.run_dir / "figures" / "accuracy_vs_generation.png")
             plot_metric_by_generation(
                 agg,

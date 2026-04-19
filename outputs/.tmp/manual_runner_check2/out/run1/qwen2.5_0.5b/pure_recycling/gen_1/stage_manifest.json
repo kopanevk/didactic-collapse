@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "run_id": "dc_t_20260418_224719",
+  "run_dir": "outputs\\.tmp\\manual_runner_check2\\out\\run1",
+  "scope": "context",
+  "model_name": "qwen2.5:0.5b",
+  "generation": 1,
+  "branch": "pure_recycling",
+  "seed": 42,
+  "config_hash": "44a7ac4e51d32f854d727cd624e4e5acc3ef87099753a75e3e66cf78da0f81aa",
+  "stages": {
+    "generation": {
+      "stage_name": "generation",
+      "status": "pending",
+      "timestamp_start": null,
+      "timestamp_end": null,
+      "model_name": "qwen2.5:0.5b",
+      "generation": 1,
+      "branch": "pure_recycling",
+      "seed": 42,
+      "config_hash": "44a7ac4e51d32f854d727cd624e4e5acc3ef87099753a75e3e66cf78da0f81aa",
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "row_count": null,
+      "error_message": null
+    },
+    "answer_extraction": {
+      "stage_name": "answer_extraction",
+      "status": "pending",
+      "timestamp_start": null,
+      "timestamp_end": null,
+      "model_name": "qwen2.5:0.5b",
+      "generation": 1,
+      "branch": "pure_recycling",
+      "seed": 42,
+      "config_hash": "44a7ac4e51d32f854d727cd624e4e5acc3ef87099753a75e3e66cf78da0f81aa",
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "row_count": null,
+      "error_message": null
+    },
+    "accuracy": {
+      "stage_name": "accuracy",
+      "status": "pending",
+      "timestamp_start": null,
+      "timestamp_end": null,
+      "model_name": "qwen2.5:0.5b",
+      "generation": 1,
+      "branch": "pure_recycling",
+      "seed": 42,
+      "config_hash": "44a7ac4e51d32f854d727cd624e4e5acc3ef87099753a75e3e66cf78da0f81aa",
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "row_count": null,
+      "error_message": null
+    },
+    "judge": {
+      "stage_name": "judge",
+      "status": "pending",
+      "timestamp_start": null,
+      "timestamp_end": null,
+      "model_name": "qwen2.5:0.5b",
+      "generation": 1,
+      "branch": "pure_recycling",
+      "seed": 42,
+      "config_hash": "44a7ac4e51d32f854d727cd624e4e5acc3ef87099753a75e3e66cf78da0f81aa",
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "row_count": null,
+      "error_message": null
+    },
+    "synthetic_build": {
+      "stage_name": "synthetic_build",
+      "status": "completed",
+      "timestamp_start": "2026-04-18T19:47:19.602594+00:00",
+      "timestamp_end": "2026-04-18T19:47:19.641574+00:00",
+      "model_name": "qwen2.5:0.5b",
+      "generation": 1,
+      "branch": "pure_recycling",
+      "seed": 42,
+      "config_hash": "44a7ac4e51d32f854d727cd624e4e5acc3ef87099753a75e3e66cf78da0f81aa",
+      "input_artifacts": [
+        "outputs\\.tmp\\manual_runner_check2\\out\\run1\\qwen2.5_0.5b\\pure_recycling\\gen_1\\answer_extraction.parquet",
+        "outputs\\.tmp\\manual_runner_check2\\data\\splits\\heldout_test.parquet"
+      ],
+      "output_artifacts": [
+        "outputs\\.tmp\\manual_runner_check2\\out\\run1\\qwen2.5_0.5b\\pure_recycling\\gen_1\\synthetic_base.parquet"
+      ],
+      "row_count": 1,
+      "error_message": null
+    },
+    "anchoring": {
+      "stage_name": "anchoring",
+      "status": "pending",
+      "timestamp_start": null,
+      "timestamp_end": null,
+      "model_name": "qwen2.5:0.5b",
+      "generation": 1,
+      "branch": "pure_recycling",
+      "seed": 42,
+      "config_hash": "44a7ac4e51d32f854d727cd624e4e5acc3ef87099753a75e3e66cf78da0f81aa",
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "row_count": null,
+      "error_message": null
+    }
+  }
+}

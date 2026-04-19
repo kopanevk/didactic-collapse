@@ -14,12 +14,13 @@ models:
       role: subject
 
 judge:
-  provider: gemini_sdk
-  model_name: gemini-2.5-flash
-  base_url: https://generativelanguage.googleapis.com/v1beta/openai
-  api_key_env: GEMINI_API_KEY
-  timeout_sec: 60
+  provider: cerebras
+  model_name: llama-3.1-8b
+  base_url: https://api.cerebras.ai/v1
+  api_key_env: CEREBRAS_API_KEY
+  timeout_sec: 120
   max_retries: 3
+  request_delay_sec: 0.8
 
 sampling:
   temperature: 0.0
@@ -44,3 +45,4 @@ runtime:
   force_recompute: false
   save_parquet: true
   save_csv: true
+  generation_prompt_version: v1

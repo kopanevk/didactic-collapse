@@ -4,7 +4,12 @@ from pathlib import Path
 
 import typer
 
-from didactic_collapse.clients.judge_client import gemini_judge_auth_smoke_check
+from didactic_collapse.analysis.compare_runs import compare_first_experiment_runs
+from didactic_collapse.clients.judge_client import (
+    cerebras_judge_auth_smoke_check,
+    cerebras_judge_rubric_format_check,
+    gemini_judge_auth_smoke_check,
+)
 from didactic_collapse.config.settings import load_config
 from didactic_collapse.orchestration.first_experiment import run_first_experiment, resume_first_experiment
 from didactic_collapse.orchestration.pilot import run_pilot
@@ -131,21 +136,73 @@ def first_experiment_resume(
 
 
 @app.command()
+def first_experiment_compare(
+    old_run_dir: str,
+    new_run_dir: str,
+    out_dir: str = "",
+) -> None:
+    """Compare first-experiment runs on corrected accuracy and parse-failure metrics."""
+    artifacts = compare_first_experiment_runs(
+        old_run_dir=Path(old_run_dir),
+        new_run_dir=Path(new_run_dir),
+        out_dir=Path(out_dir) if out_dir else None,
+    )
+    typer.echo("First experiment comparison export finished")
+    typer.echo(f"CSV: {artifacts.csv_path}")
+    typer.echo(f"Parquet: {artifacts.parquet_path}")
+
+
+@app.command()
 def judge_auth_check(config: str = "configs/first_experiment.yaml") -> None:
-    """Preflight Gemini judge auth using the same SDK auth path as pipeline."""
+    """Preflight judge auth using the same client path as pipeline."""
     cfg = load_config(config)
     provider = cfg.judge.provider.strip().lower()
-    if provider not in {"gemini", "gemini_sdk", "gemini_openai_compatible"}:
-        raise typer.BadParameter(
-            f"judge_auth_check supports Gemini providers only. Current provider: {cfg.judge.provider}"
+    if provider in {"gemini", "gemini_sdk", "gemini_openai_compatible"}:
+        text = gemini_judge_auth_smoke_check(
+            model_name=cfg.judge.model_name,
+            api_key_env=cfg.judge.api_key_env,
         )
+        typer.echo("Gemini judge auth check succeeded.")
+        typer.echo(f"Response preview: {text[:120].replace(chr(10), ' ')}")
+        return
 
-    text = gemini_judge_auth_smoke_check(
-        model_name=cfg.judge.model_name,
-        api_key_env=cfg.judge.api_key_env,
+    if provider == "cerebras":
+        text = cerebras_judge_auth_smoke_check(
+            model_name=cfg.judge.model_name,
+            base_url=cfg.judge.base_url,
+            api_key_env=cfg.judge.api_key_env,
+            timeout_sec=cfg.judge.timeout_sec,
+        )
+        typer.echo("Cerebras judge auth check succeeded.")
+        typer.echo(f"Response preview: {text[:120].replace(chr(10), ' ')}")
+        return
+
+    if provider in {"mock", "stub", "mock_judge"}:
+        raise typer.BadParameter(
+            "judge_auth_check requires a real provider and does not support mock/stub."
+        )
+    raise typer.BadParameter(
+        "judge_auth_check currently supports providers: cerebras, gemini, gemini_sdk."
     )
-    typer.echo("Gemini judge auth check succeeded.")
-    typer.echo(f"Response preview: {text[:120].replace(chr(10), ' ')}")
+
+
+@app.command()
+def judge_rubric_check(config: str = "configs/first_experiment.yaml") -> None:
+    """Validate rubric-format readiness using the same parser as judge stage."""
+    cfg = load_config(config)
+    provider = cfg.judge.provider.strip().lower()
+    if provider != "cerebras":
+        raise typer.BadParameter(
+            "judge_rubric_check currently supports provider=cerebras only."
+        )
+    score = cerebras_judge_rubric_format_check(
+        model_name=cfg.judge.model_name,
+        base_url=cfg.judge.base_url,
+        api_key_env=cfg.judge.api_key_env,
+        timeout_sec=cfg.judge.timeout_sec,
+    )
+    typer.echo("Cerebras judge rubric-format check succeeded.")
+    typer.echo(f"Rubric sample: {score}")
 
 
 if __name__ == "__main__":

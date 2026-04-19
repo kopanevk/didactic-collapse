@@ -35,6 +35,7 @@ class JudgeConfig(BaseModel):
     api_key_env: str
     timeout_sec: int = 60
     max_retries: int = 3
+    request_delay_sec: float = 0.25
 
 
 class SamplingConfig(BaseModel):
@@ -64,6 +65,10 @@ class RuntimeConfig(BaseModel):
     force_recompute: bool = False
     save_parquet: bool = True
     save_csv: bool = True
+    generation_prompt_version: str = "v1"
+    partial_save_every_n: int = 10
+    max_row_failures: int = 5
+    continue_on_row_error: bool = True
 
 
 class AppConfig(BaseModel):
