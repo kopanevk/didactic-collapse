@@ -503,12 +503,26 @@ class ExperimentRunner:
         # Failure artifacts may legitimately be empty while still being valid outputs.
         return "failures" not in path.name
 
+    def _artifact_is_optional(self, path: Path) -> bool:
+        # Backward-compatible with runs created before row-level sidecar artifacts existed.
+        optional_names = {
+            "generation_partial.parquet",
+            "generation_failures.parquet",
+            "generation_progress.json",
+            "judge_partial.parquet",
+            "judge_failures.parquet",
+            "judge_progress.json",
+        }
+        return path.name in optional_names
+
     def _stage_supports_row_level_resume(self, stage_name: StageName) -> bool:
         return stage_name in {"judge", "generation"}
 
     def _validate_stage_artifacts(self, output_paths: list[Path]) -> int | None:
         row_count: int | None = None
         for path in output_paths:
+            if not path.exists() and self._artifact_is_optional(path):
+                continue
             must_non_empty = self._artifact_must_be_non_empty(path)
             maybe_rows = _validate_readable_artifact(path, must_be_non_empty=must_non_empty)
             if maybe_rows is not None and must_non_empty:

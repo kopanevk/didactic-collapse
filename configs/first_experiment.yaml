@@ -46,3 +46,6 @@ runtime:
   save_parquet: true
   save_csv: true
   generation_prompt_version: v1
+  partial_save_every_n: 10
+  max_row_failures: 10
+  continue_on_row_error: true

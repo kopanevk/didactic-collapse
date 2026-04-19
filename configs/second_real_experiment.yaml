@@ -23,9 +23,9 @@ judge:
   request_delay_sec: 1.0
 
 sampling:
-  temperature: 0.15
+  temperature: 0.2
   top_p: 0.95
-  max_tokens: 768
+  max_tokens: 896
 
 experiment:
   generations: 2
@@ -46,3 +46,6 @@ runtime:
   save_parquet: true
   save_csv: true
   generation_prompt_version: v2_strict_final
+  partial_save_every_n: 10
+  max_row_failures: 10
+  continue_on_row_error: true

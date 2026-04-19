@@ -58,9 +58,10 @@ def _ensure_real_judge_provider(cfg: AppConfig) -> None:
 
 
 def _override_judge_config_for_resume(snapshot_cfg: AppConfig, requested_cfg: AppConfig) -> AppConfig:
-    """Use snapshot lineage for data/model settings but allow explicit judge provider override."""
+    """Use snapshot lineage but allow judge + runtime fault-tolerance overrides for resume."""
     raw = snapshot_cfg.model_dump(mode="python")
     raw["judge"] = requested_cfg.judge.model_dump(mode="python")
+    raw["runtime"] = requested_cfg.runtime.model_dump(mode="python")
     return AppConfig.model_validate(raw)
 
 

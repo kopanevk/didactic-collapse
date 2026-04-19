@@ -32,6 +32,7 @@ def build_generation_prompt(*, question: str, prompt_version: str) -> str:
             "Keep the explanation concise and numerical.\n"
             "The final line MUST be exactly in this format:\n"
             "Final answer: <number>\n"
+            "The <number> must be numeric only (no units, no extra words).\n"
             "Do not add any text after the final line.\n\n"
             f"Question: {q}"
         )
