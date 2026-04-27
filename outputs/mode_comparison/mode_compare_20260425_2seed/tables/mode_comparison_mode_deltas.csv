@@ -1,0 +1,9 @@
+seed,branch,generation,comparison,delta_accuracy_mean,delta_pedagogical_score_mean,delta_silent_error_rate,delta_parse_failure_pred_rate
+61,anchor_20_append,0,training_minus_inference,0.0,0.3600000000000003,0.03999999999999998,0.0
+61,anchor_20_append,1,training_minus_inference,0.020000000000000018,-0.40000000000000036,-0.06,0.0
+61,pure_recycling,0,training_minus_inference,-0.040000000000000036,-0.21999999999999975,-0.020000000000000018,-0.04
+61,pure_recycling,1,training_minus_inference,-0.18,-0.9199999999999999,0.01999999999999999,0.0
+62,anchor_20_append,0,training_minus_inference,0.06,-0.040000000000000036,0.07999999999999999,0.0
+62,anchor_20_append,1,training_minus_inference,0.03999999999999998,-0.28000000000000025,0.020000000000000018,0.060000000000000005
+62,pure_recycling,0,training_minus_inference,0.13999999999999996,0.0,-0.040000000000000036,-0.02
+62,pure_recycling,1,training_minus_inference,0.03999999999999998,-0.28000000000000025,-0.07999999999999999,0.04

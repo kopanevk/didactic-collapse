@@ -1,0 +1,9 @@
+{
+  "evaluation_mode": "training_recycling_feasibility",
+  "scientific_limitation": "minimal_ollama_specialization_backend_not_full_gradient_finetuning",
+  "run_dirs": [
+    "outputs\\runs\\training_confirmatory_anchor20_seed71_20260425_141959",
+    "outputs\\runs\\training_confirmatory_anchor20_seed72_20260426_101349",
+    "outputs\\runs\\training_confirmatory_anchor20_seed73_20260426_103916"
+  ]
+}

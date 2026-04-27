@@ -1,0 +1,3 @@
+model_name,branch,generation,sample_count,accuracy_mean,pedagogical_score_mean,silent_error_rate
+qwen2.5:0.5b,pure_recycling,0,4,0.5,4.5,0.25
+qwen2.5:0.5b,anchor_20_append,0,4,0.75,5.5,0.1

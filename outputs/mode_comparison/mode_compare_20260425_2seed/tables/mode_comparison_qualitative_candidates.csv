@@ -1,0 +1,56 @@
+category,seed,branch,generation,example_id,question,answer_gold,is_correct_training,is_correct_inference,overall_pedagogical_score_training,overall_pedagogical_score_inference,is_silent_error_training,is_silent_error_inference
+training_better_than_inference,61,anchor_20_append,1.0,gsm8k_1272bd82df9a0426,"Lana had 8 blank pages left in her binder, but she knew she would need more for her next class. Duane took half of the 42 pages in his binder out and gave them to her. How many pages does Lana have in her binder after adding Duane’s?","Duane gave Lana 42 / 2 = <<42/2=21>>21 pages.
+After adding Duane’s, Lana has 21 + 8 = <<21+8=29>>29 pages in her binder.
+#### 29",True,False,8.0,6.0,False,True
+training_better_than_inference,61,anchor_20_append,1.0,gsm8k_147ec847b4faac5b,John invests in a bank and gets 10% simple interest.  He invests $1000.  How much money does he have after 3 years?,"He gets 1000*.1=$<<1000*.1=100>>100 a year
+So after 3 years, he gets 100*3=$<<100*3=300>>300
+So he has 300+1000=$<<300+1000=1300>>1300
+#### 1300",True,True,8.0,0.0,False,False
+training_better_than_inference,61,anchor_20_append,1.0,gsm8k_27ec813d753cc6d2,"Fernanda purchased six audiobooks from Audible to listen to from her audible app. If each audiobook was 30 hours long and she listened to 2 hours of an audiobook each day, calculate the total time it took her to finish the six audiobooks?","To finish an audiobook 30 hours long, listening to 2 hours of each audiobook a day, Fernanda took 30 hours / 2 hours/day =<<30/2=15>>15 days to finish one audiobook.
+If she purchased 6 audiobooks, the total number of days she will take to finish all the audiobooks is 6 audiobooks * 15 days/audiobook = <<6*15=90>>90 days
+#### 90",True,False,8.0,5.0,False,True
+training_better_than_inference,61,anchor_20_append,1.0,gsm8k_32eb0ee54b829238,"Cody was reading through his favorite book series.  The series was 54 books in total.  If Cody read 6 books the first week, and 3 books the second week and then 9 books every week after that.  How many weeks did it take Cody to read his series?","Cody needs to read 54 books - 6 books - 3 books = <<54-6-3=45>>45 books.
+Cody read 9 books each week after = 45 books / 9 books per week = <<45/9=5>>5 weeks.
+Cody read for 1 week + 1 week + 5 weeks = <<1+1+5=7>>7 weeks total.
+#### 7",False,False,8.0,0.0,False,False
+training_better_than_inference,61,anchor_20_append,1.0,gsm8k_362ba5928dea6e4f,"Cordelia is dyeing her hair red. To get the color she wants, she first has to bleach her dark brown hair to blonde, and then she has to apply the dye. The whole process will take 9 hours. Dyeing takes twice as long as bleaching. How many hours will it take Cordelia to bleach her hair?","Let H be the number of hours it takes Cordelia to bleach her hair.
+A dye treatment takes twice as long, so it takes 2H.
+Thus, bleaching and dying will take H + 2H = 3H = 9 hours.
+Therefore, it will take Cordelia H = 9 / 3 = <<9/3=3>>3 hours to bleach her hair.
+#### 3",False,False,8.0,0.0,False,True
+inference_better_than_training,61,anchor_20_append,1.0,gsm8k_015c80ca07ae9f3b,"Rachel weighs 75 pounds, 6 pounds less than Jimmy and 15 pounds more than Adam. What is the average weight of the three people, in pounds?","Jimmy weighs 75+6 = <<75+6=81>>81 pounds.
+Adam's weight is 75-15= <<75-15=60>>60 pounds.
+In total, the three weigh 75 + 81 + 60 = <<75+81+60=216>>216 pounds.
+The average weight of the three is 216/3 = <<216/3=72>>72 pounds
+#### 72",False,False,0.0,8.0,False,False
+inference_better_than_training,61,anchor_20_append,1.0,gsm8k_3f6e2f7a4278979f,Tracy set up a booth at an art fair. 20 people came to look at her art. Four of those customers bought two paintings each. The next 12 of those customers bought one painting each. The last 4 customers bought four paintings each.  How many paintings did Tracy sell at the art fair?,"The first 4 customers bought 4*2=<<4*2=8>>8 paintings
+The next 12 customers bought 12*1=<<12*1=12>>12 paintings
+The last 4 customers bought 4*4=<<4*4=16>>16 paintings
+In total Tracy sold 8+12+16=<<8+12+16=36>>36 paintings
+#### 36",False,True,0.0,8.0,True,False
+inference_better_than_training,61,anchor_20_append,1.0,gsm8k_481bf935f251aca4,"A company has 1000 employees. There will be three rounds of layoffs. For each round of layoff, 10% of the remaining employees will be laid off. How many employees will be laid off in total?","The first round will result in 1000 * 10% = <<1000*10*.01=100>>100 employee layoffs.
+There are 1000 - 100 = <<1000-100=900>>900 employees remaining.
+The second round will result in 900 * 10% = <<900*10*.01=90>>90 employee layoffs.
+There are 900 - 90 = <<900-90=810>>810 employees remaining.
+The third round will result in 810 * 10% = <<810*10*.01=81>>81 employee layoffs.
+The total number of of employees laid off is 100 + 90 + 81 = <<100+90+81=271>>271.
+#### 271",False,True,0.0,8.0,True,False
+inference_better_than_training,61,anchor_20_append,1.0,gsm8k_784bbbb645ba479f,Hannah ran 9 kilometers on Monday. She ran 4816 meters on Wednesday and 2095 meters on Friday. How many meters farther did she run on Monday than Wednesday and Friday combined?,"Wednesday + Friday = 4816 + 2095 = <<4816+2095=6911>>6911 meters
+9 km = <<9*1000=9000>>9000 meters
+9000 - 6911 = <<9000-6911=2089>>2089 meters
+Hannah ran 2089 meters farther on Monday than Wednesday and Friday.
+#### 2089",False,True,6.0,8.0,False,False
+inference_better_than_training,61,anchor_20_append,1.0,gsm8k_914fdf4a5bb22200,Last week the IRS received 5168 tax reports. On Monday and Tuesday they received a total of 1907 reports. On Thursday and Friday they received a total of 2136 reports. How many reports did they receive on Wednesday?,"Mon/Tues = 1907
+Thur/Fri = 2136
+Mon, Tues, Thur, Fri = 1907 + 2136 = <<1907+2136=4043>>4043
+5168 - 4043 = <<5168-4043=1125>>1125 reports
+The IRS received 1125 tax reports on Wednesday of last week.
+#### 1125",False,True,0.0,8.0,False,False
+silent_error_mode_disagreement,61,anchor_20_append,0.0,gsm8k_015c80ca07ae9f3b,"Rachel weighs 75 pounds, 6 pounds less than Jimmy and 15 pounds more than Adam. What is the average weight of the three people, in pounds?","Jimmy weighs 75+6 = <<75+6=81>>81 pounds.
+Adam's weight is 75-15= <<75-15=60>>60 pounds.
+In total, the three weigh 75 + 81 + 60 = <<75+81+60=216>>216 pounds.
+The average weight of the three is 216/3 = <<216/3=72>>72 pounds
+#### 72",False,False,8.0,6.0,False,True
+silent_error_mode_disagreement,61,anchor_20_append,0.0,gsm8k_0cd1a21f74e973df,"Roy spends 2 hours on sports activities in school every day. He goes to school 5 days a week. If he missed 2 days within a week, how many hours did he spend on sports in school that week?","He goes to.school 5 days a week so if he misses 2 days within the week he was present for 5-2 = <<5-2=3>>3 days
+He spends 2 hours every day for a total of 2*3 = <<2*3=6>>6 hours
+#### 6",True,False,8.0,0.0,False,True

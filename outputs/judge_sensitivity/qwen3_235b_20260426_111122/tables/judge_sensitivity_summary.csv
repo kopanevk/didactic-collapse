@@ -1,0 +1,2 @@
+n_examples,mean_old_llama_score,mean_qwen_score,mean_abs_score_delta,score_correlation,silent_error_agreement_rate,qwen_repair_applied_rate,gen1_old_anchor_minus_pure_pedagogical,gen1_qwen_anchor_minus_pure_pedagogical,gen1_branch_conclusion_changed
+48,2.7916666666666665,5.020833333333333,2.3541666666666665,0.7534248827648864,0.6041666666666666,0.0,-1.416666666666667,-0.666666666666667,False

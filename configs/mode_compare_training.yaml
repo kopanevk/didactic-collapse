@@ -1,0 +1,74 @@
+project:
+  name: didactic_collapse
+  seed: 61
+  run_tag: mode_compare_training
+
+paths:
+  data_root: data
+  output_root: outputs
+  prompt_dir: configs/prompts
+
+models:
+  local_models:
+    - name: qwen2.5:0.5b
+      role: subject
+
+judge:
+  provider: cerebras
+  model_name: llama-3.1-8b
+  base_url: https://api.cerebras.ai/v1
+  api_key_env: CEREBRAS_API_KEY
+  timeout_sec: 180
+  max_retries: 4
+  request_delay_sec: 1.0
+
+sampling:
+  temperature: 0.2
+  top_p: 0.95
+  max_tokens: 896
+
+experiment:
+  mode: training_recycling_feasibility
+  generations: 2
+  branches:
+    - name: pure_recycling
+      anchor_ratio: 0.0
+      mixing_mode: append
+    - name: anchor_20_append
+      anchor_ratio: 0.20
+      mixing_mode: append
+
+dataset:
+  source: gsm8k
+  base_train_size: 120
+  anchor_pool_size: 400
+  heldout_test_size: 200
+
+runtime:
+  force_recompute: false
+  save_parquet: true
+  save_csv: true
+  generation_prompt_version: v2_strict_final
+  partial_save_every_n: 10
+  max_row_failures: 20
+  continue_on_row_error: true
+
+training:
+  backend: command
+  command_template: >
+    python scripts/train_feasibility_adapter.py
+    --input "{train_path}"
+    --output-dir "{output_dir}"
+    --base-model "{base_model}"
+    --target-model "{target_model}"
+    --seed {seed}
+    --base-url http://localhost:11434
+    --timeout-sec 900
+    --max-examples 32
+    --max-chars 5000
+  command_timeout_sec: 3600
+  output_model_name_template: "{base_model}__{branch}__ft_g{generation_to}_s{seed}"
+  result_filename: training_result.json
+  run_gen1_recycling_stages: false
+  allow_stub_for_smoke: false
+  max_train_rows: 200

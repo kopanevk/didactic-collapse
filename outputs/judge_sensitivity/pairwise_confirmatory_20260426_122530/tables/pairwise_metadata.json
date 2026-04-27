@@ -1,0 +1,21 @@
+{
+  "created_at": "2026-04-26T12:39:08.089591",
+  "judge_provider": "cerebras",
+  "generation": 1,
+  "sample_size_requested": 48,
+  "sample_size_selected": 48,
+  "sample_seed": 4242,
+  "source_run_dirs": [
+    "outputs\\runs\\training_confirmatory_anchor20_seed71_20260425_141959",
+    "outputs\\runs\\training_confirmatory_anchor20_seed72_20260426_101349",
+    "outputs\\runs\\training_confirmatory_anchor20_seed73_20260426_103916"
+  ],
+  "llama_model_name": "llama-3.1-8b",
+  "qwen_model_name": "qwen-3-235b-a22b-instruct-2507",
+  "llama_success_count": 48,
+  "llama_failure_count": 0,
+  "qwen_success_count": 48,
+  "qwen_failure_count": 0,
+  "evaluation_mode": "pairwise_blinded_robustness_check_only",
+  "note": "No generation/training rerun; pairwise judging on existing outputs only."
+}

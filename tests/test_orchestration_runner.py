@@ -78,6 +78,14 @@ def _make_cerebras_cfg(tmp_path: Path) -> AppConfig:
     return AppConfig.model_validate(payload)
 
 
+def _mk_local_temp_dir(prefix: str) -> Path:
+    root = Path.cwd() / "test_workdirs"
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / f"{prefix}_{uuid.uuid4().hex}"
+    path.mkdir(parents=True, exist_ok=False)
+    return path
+
+
 def _executor_factory(counter: dict[str, int]):
     def _exec(ctx: StageContext) -> StageExecutionResult:
         counter[ctx.stage_name] = counter.get(ctx.stage_name, 0) + 1
@@ -477,9 +485,162 @@ def test_judge_stage_row_level_resume_reuses_partial_progress() -> None:
 
         cfg.runtime.max_row_failures = 1
         runner.run_stage("judge", model_name="qwen2.5:0.5b", branch="pure_recycling", generation=1)
-        assert judge.calls == {"good-1": 1, "bad-2": 1, "good-3": 1}
+        assert judge.calls == {"good-1": 1, "bad-2": 2, "good-3": 1}
 
         merged = pd.read_parquet(step_dir / "eval_merged.parquet")
         assert set(merged["example_id"].tolist()) == {"ex1", "ex3"}
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
+def test_anchoring_stage_pvf_branch_writes_filter_artifacts() -> None:
+    base = _mk_local_temp_dir("runner_pvf")
+    try:
+        cfg = _make_cfg(base)
+        payload = cfg.model_dump(mode="python")
+        payload["experiment"]["branches"] = [
+            {
+                "name": "pvf_medium",
+                "branch_type": "pvf_medium",
+                "anchor_ratio": 0.0,
+                "mixing_mode": "append",
+                "pvf_threshold_score": 5,
+                "pvf_min_keep_ratio": 0.2,
+            }
+        ]
+        cfg = AppConfig.model_validate(payload)
+
+        runner = ExperimentRunner(cfg, run_dir=base / "run", stage_executors={})
+        step_dir = runner._step_dir(model_name="qwen2.5:0.5b", branch="pvf_medium", generation=1)
+        step_dir.mkdir(parents=True, exist_ok=True)
+
+        pd.DataFrame(
+            [
+                {"example_id": "h1", "question": "q", "answer_for_training": "A", "source": "synthetic"},
+                {"example_id": "h2", "question": "q2", "answer_for_training": "B", "source": "synthetic"},
+            ]
+        ).to_parquet(step_dir / "synthetic_base.parquet", index=False)
+        pd.DataFrame(
+            [
+                {"example_id": "h1", "pred_parse_success": True, "accuracy_label": "correct", "is_correct": True},
+                {"example_id": "h2", "pred_parse_success": False, "accuracy_label": "wrong", "is_correct": False},
+            ]
+        ).to_parquet(step_dir / "accuracy_table.parquet", index=False)
+        pd.DataFrame(
+            [
+                {"example_id": "h1", "overall_pedagogical_score": 6, "is_silent_error": False},
+                {"example_id": "h2", "overall_pedagogical_score": 2, "is_silent_error": True},
+            ]
+        ).to_parquet(step_dir / "judge_outputs.parquet", index=False)
+
+        runner.run_stage("anchoring", model_name="qwen2.5:0.5b", branch="pvf_medium", generation=1)
+
+        assert (step_dir / "filtered_training_dataset.parquet").exists()
+        assert (step_dir / "rejected_examples.parquet").exists()
+        assert (step_dir / "pvf_filter_report.json").exists()
+        out_df = pd.read_parquet(step_dir / "synthetic_train_next.parquet")
+        assert set(out_df["example_id"].tolist()) == {"h1"}
+        meta = json.loads((step_dir / "anchor_selection_manifest.json").read_text(encoding="utf-8"))
+        assert meta["method"] == "pvf_medium"
+        assert json.loads((step_dir / "used_anchor_ids.json").read_text(encoding="utf-8")) == []
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
+def test_anchoring_stage_human_branch_still_works_after_pvf_integration() -> None:
+    base = _mk_local_temp_dir("runner_anchor")
+    try:
+        cfg = _make_cfg(base)
+        payload = cfg.model_dump(mode="python")
+        payload["experiment"]["branches"] = [
+            {
+                "name": "anchor_50_append",
+                "branch_type": "human_anchoring",
+                "anchor_ratio": 0.5,
+                "mixing_mode": "append",
+            }
+        ]
+        cfg = AppConfig.model_validate(payload)
+
+        runner = ExperimentRunner(cfg, run_dir=base / "run", stage_executors={})
+        step_dir = runner._step_dir(model_name="qwen2.5:0.5b", branch="anchor_50_append", generation=1)
+        step_dir.mkdir(parents=True, exist_ok=True)
+
+        pd.DataFrame(
+            [
+                {"example_id": "s1", "question": "q1", "answer_for_training": "A1", "source": "synthetic"},
+                {"example_id": "s2", "question": "q2", "answer_for_training": "A2", "source": "synthetic"},
+            ]
+        ).to_parquet(step_dir / "synthetic_base.parquet", index=False)
+        pd.DataFrame(
+            [
+                {"example_id": "s1", "pred_parse_success": True, "accuracy_label": "correct", "is_correct": True},
+                {"example_id": "s2", "pred_parse_success": True, "accuracy_label": "correct", "is_correct": True},
+            ]
+        ).to_parquet(step_dir / "accuracy_table.parquet", index=False)
+        pd.DataFrame(
+            [
+                {"example_id": "s1", "overall_pedagogical_score": 6, "is_silent_error": False},
+                {"example_id": "s2", "overall_pedagogical_score": 6, "is_silent_error": False},
+            ]
+        ).to_parquet(step_dir / "judge_outputs.parquet", index=False)
+
+        runner.run_stage("anchoring", model_name="qwen2.5:0.5b", branch="anchor_50_append", generation=1)
+
+        out_df = pd.read_parquet(step_dir / "synthetic_train_next.parquet")
+        assert len(out_df) == 3  # 2 synthetic + 1 anchor (append, ratio 0.5 on n=2)
+        assert int((out_df["source"] == "human_anchor").sum()) == 1
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
+def test_anchoring_stage_pvf_tolerates_missing_judge_rows_with_continue_on_error() -> None:
+    base = _mk_local_temp_dir("runner_pvf_partial")
+    try:
+        cfg = _make_cfg(base)
+        payload = cfg.model_dump(mode="python")
+        payload["runtime"]["continue_on_row_error"] = True
+        payload["experiment"]["branches"] = [
+            {
+                "name": "pvf_medium",
+                "branch_type": "pvf_medium",
+                "anchor_ratio": 0.0,
+                "mixing_mode": "append",
+                "pvf_threshold_score": 5,
+                "pvf_min_keep_ratio": 0.2,
+            }
+        ]
+        cfg = AppConfig.model_validate(payload)
+
+        runner = ExperimentRunner(cfg, run_dir=base / "run", stage_executors={})
+        step_dir = runner._step_dir(model_name="qwen2.5:0.5b", branch="pvf_medium", generation=1)
+        step_dir.mkdir(parents=True, exist_ok=True)
+
+        pd.DataFrame(
+            [
+                {"example_id": "h1", "question": "q", "answer_for_training": "A", "source": "synthetic"},
+                {"example_id": "h2", "question": "q2", "answer_for_training": "B", "source": "synthetic"},
+            ]
+        ).to_parquet(step_dir / "synthetic_base.parquet", index=False)
+        pd.DataFrame(
+            [
+                {"example_id": "h1", "pred_parse_success": True, "accuracy_label": "correct", "is_correct": True},
+                {"example_id": "h2", "pred_parse_success": True, "accuracy_label": "correct", "is_correct": True},
+            ]
+        ).to_parquet(step_dir / "accuracy_table.parquet", index=False)
+        # h2 intentionally absent in judge to emulate row-level judge failure.
+        pd.DataFrame(
+            [
+                {"example_id": "h1", "overall_pedagogical_score": 6, "is_silent_error": False},
+            ]
+        ).to_parquet(step_dir / "judge_outputs.parquet", index=False)
+
+        runner.run_stage("anchoring", model_name="qwen2.5:0.5b", branch="pvf_medium", generation=1)
+
+        out_df = pd.read_parquet(step_dir / "synthetic_train_next.parquet")
+        assert set(out_df["example_id"].tolist()) == {"h1"}
+        rejected = pd.read_parquet(step_dir / "rejected_examples.parquet")
+        reject_h2 = rejected.loc[rejected["example_id"] == "h2", "pvf_reject_reasons"].astype(str).tolist()
+        assert reject_h2 and "missing_judge_row" in reject_h2[0]
     finally:
         shutil.rmtree(base, ignore_errors=True)

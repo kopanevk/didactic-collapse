@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-25T14:15:56.551561",
+  "is_stub": true,
+  "trained_model_name": "qwen2.5:0.5b__anchor_20_append__ft_g1_s7",
+  "base_model_name": "qwen2.5:0.5b",
+  "branch": "anchor_20_append",
+  "training_data_path": "outputs\\.tmp\\unit_training_feasibility\\stub_contract_9b9424bd\\train.parquet",
+  "note": "stub_backend_non_scientific"
+}

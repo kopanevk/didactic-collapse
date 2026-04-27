@@ -704,7 +704,9 @@ class OpenAICompatibleJudgeClient(JudgeClient):
         jitter_max_sec: float = 0.75,
     ) -> float:
         if retry_after_sec is not None:
-            return max(0.0, retry_after_sec)
+            # Some providers return extremely large Retry-After values (e.g. 86400).
+            # Cap this to keep long-running experiments resumable/fault-tolerant.
+            return min(max_backoff_sec, max(0.0, retry_after_sec))
         exp = min(max_backoff_sec, base_backoff_sec * (2 ** max(0, attempt_number - 1)))
         jitter = random.uniform(0.0, jitter_max_sec)
         return exp + jitter

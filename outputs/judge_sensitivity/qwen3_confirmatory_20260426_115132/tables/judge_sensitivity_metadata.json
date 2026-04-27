@@ -1,0 +1,17 @@
+{
+  "created_at": "2026-04-26T12:05:50.096751",
+  "judge_provider": "cerebras",
+  "judge_model_name": "qwen-3-235b-a22b-instruct-2507",
+  "sample_size_requested": 48,
+  "sample_size_selected": 48,
+  "sample_seed": 4242,
+  "sampling_strategy": "confirmatory_gen1_seed_branch",
+  "focus_generation": 1,
+  "source_run_dirs": [
+    "outputs\\runs\\training_confirmatory_anchor20_seed71_20260425_141959",
+    "outputs\\runs\\training_confirmatory_anchor20_seed72_20260426_101349",
+    "outputs\\runs\\training_confirmatory_anchor20_seed73_20260426_103916"
+  ],
+  "evaluation_mode": "robustness_sensitivity_check_only",
+  "note": "No generation/training rerun. Re-judge of existing raw responses only."
+}

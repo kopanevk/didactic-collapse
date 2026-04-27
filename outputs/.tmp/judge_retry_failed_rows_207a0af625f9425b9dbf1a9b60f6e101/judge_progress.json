@@ -1,0 +1,11 @@
+{
+  "stage": "judge",
+  "total_rows": 2,
+  "completed_rows": 2,
+  "failed_rows": 0,
+  "skipped_from_checkpoint": 1,
+  "processed_this_run": 1,
+  "partial_save_every_n": 1,
+  "max_row_failures": 0,
+  "continue_on_row_error": true
+}

@@ -74,6 +74,7 @@ def test_build_first_experiment_config(tmp_path: Path) -> None:
     assert out.models.local_models[0].name == "qwen2.5:0.5b"
     assert out.experiment.generations == 2
     assert {b.name for b in out.experiment.branches} == {"pure_recycling", "anchor_10"}
+    assert {b.mixing_mode for b in out.experiment.branches} == {"append"}
 
 
 def test_summary_and_qualitative_exports(tmp_path: Path) -> None:

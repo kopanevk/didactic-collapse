@@ -1,0 +1,5 @@
+model_name,branch,generation,sample_count,accuracy_mean,pedagogical_score_mean,silent_error_rate,accuracy_source,parse_failure_pred_count,sample_count_from_accuracy,parse_failure_pred_rate,run_id,run_dir,seed,evaluation_mode
+qwen2.5:0.5b,anchor_20_append,0,4,0.75,5.5,0.1,raw_summary,1,4,0.25,inference_run,outputs\.tmp\unit_mode_compare\mode_export_d805205e\inference_run,71,inference_recycling_only
+qwen2.5:0.5b,pure_recycling,0,4,0.5,4.5,0.25,raw_summary,2,4,0.5,inference_run,outputs\.tmp\unit_mode_compare\mode_export_d805205e\inference_run,71,inference_recycling_only
+qwen2.5:0.5b,anchor_20_append,0,4,0.8,5.7,0.08,training_feasibility_summary,0,4,0.0,training_run,outputs\.tmp\unit_mode_compare\mode_export_d805205e\training_run,71,training_recycling_feasibility
+qwen2.5:0.5b,pure_recycling,0,4,0.6,4.7,0.2,training_feasibility_summary,1,4,0.25,training_run,outputs\.tmp\unit_mode_compare\mode_export_d805205e\training_run,71,training_recycling_feasibility

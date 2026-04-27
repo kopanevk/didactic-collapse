@@ -34,6 +34,11 @@ from didactic_collapse.recycling.anchoring import (
     save_anchoring_artifacts,
     select_human_anchors,
 )
+from didactic_collapse.recycling.pedagogical_verification_filter import (
+    PVFPolicy,
+    apply_pedagogical_verification_filter,
+    save_pvf_artifacts,
+)
 from didactic_collapse.utils.io_utils import save_tabular
 
 logger = logging.getLogger(__name__)
@@ -263,8 +268,12 @@ class ExperimentRunner:
             "eval_merged": step_dir / "eval_merged.parquet",
             "synthetic_base": step_dir / "synthetic_base.parquet",
             "synthetic_train_next": step_dir / "synthetic_train_next.parquet",
+            "pvf_filtered_training": step_dir / "filtered_training_dataset.parquet",
+            "pvf_rejected_examples": step_dir / "rejected_examples.parquet",
+            "pvf_report": step_dir / "pvf_filter_report.json",
             "anchor_metadata": step_dir / "anchor_selection_manifest.json",
             "used_anchor_ids": step_dir / "used_anchor_ids.json",
+            "anchor_quality_diagnostics": step_dir / "anchor_quality_diagnostics.parquet",
         }
 
     def _run_artifacts(self) -> dict[str, Path]:
@@ -315,6 +324,9 @@ class ExperimentRunner:
                 artifacts["synthetic_train_next"],
                 artifacts["anchor_metadata"],
                 artifacts["used_anchor_ids"],
+                artifacts["pvf_filtered_training"],
+                artifacts["pvf_rejected_examples"],
+                artifacts["pvf_report"],
             ]
         if stage_name == "aggregate":
             return [artifacts["all_eval_merged_parquet"], artifacts["metrics_csv"]]
@@ -338,6 +350,8 @@ class ExperimentRunner:
         if stage_name == "anchoring":
             return [
                 artifacts["synthetic_base"],
+                artifacts["accuracy_table"],
+                artifacts["judge_outputs"],
                 artifacts["anchor_pool"],
                 artifacts["base_train"],
                 artifacts["heldout_test"],
@@ -501,7 +515,11 @@ class ExperimentRunner:
 
     def _artifact_must_be_non_empty(self, path: Path) -> bool:
         # Failure artifacts may legitimately be empty while still being valid outputs.
-        return "failures" not in path.name
+        if "failures" in path.name:
+            return False
+        if "rejected_examples" in path.name:
+            return False
+        return True
 
     def _artifact_is_optional(self, path: Path) -> bool:
         # Backward-compatible with runs created before row-level sidecar artifacts existed.
@@ -512,6 +530,10 @@ class ExperimentRunner:
             "judge_partial.parquet",
             "judge_failures.parquet",
             "judge_progress.json",
+            # Present only for pvf branches / newer runs.
+            "filtered_training_dataset.parquet",
+            "rejected_examples.parquet",
+            "pvf_filter_report.json",
         }
         return path.name in optional_names
 
@@ -561,6 +583,18 @@ class ExperimentRunner:
                     raise OrchestrationError(f"Invalid used_anchor_ids entry in {manifest_path}")
                 used_ids.add(item)
         return used_ids
+
+    def _resolve_branch_type(self, branch_cfg: Any) -> str:
+        declared = getattr(branch_cfg, "branch_type", None)
+        if declared is not None:
+            return str(declared)
+        name = str(getattr(branch_cfg, "name", ""))
+        if name.startswith("pvf_"):
+            return "pvf_medium"
+        anchor_ratio = float(getattr(branch_cfg, "anchor_ratio", 0.0))
+        if anchor_ratio > 0.0:
+            return "human_anchoring"
+        return "pure_recycling"
 
     def run_stage(
         self,
@@ -878,28 +912,82 @@ class ExperimentRunner:
                 raise OrchestrationError("Missing context fields for anchoring stage")
 
             synthetic_base = pd.read_parquet(context.artifacts["synthetic_base"])
-            anchor_pool = self._get_anchor_pool()
-            base_train = pd.read_parquet(context.artifacts["base_train"])
-            heldout_test = self._get_heldout()
+            accuracy_df = pd.read_parquet(context.artifacts["accuracy_table"])
+            judge_df = pd.read_parquet(context.artifacts["judge_outputs"])
 
             branch_cfg = next((b for b in self.cfg.experiment.branches if b.name == context.branch), None)
             if branch_cfg is None:
                 raise OrchestrationError(f"Unknown branch in config: {context.branch}")
 
+            branch_type = self._resolve_branch_type(branch_cfg)
+
+            if branch_type == "pvf_medium":
+                pvf_policy = PVFPolicy(
+                    threshold_score=int(getattr(branch_cfg, "pvf_threshold_score", 5)),
+                    min_keep_ratio=float(getattr(branch_cfg, "pvf_min_keep_ratio", 0.0)),
+                )
+                pvf_result = apply_pedagogical_verification_filter(
+                    synthetic_df=synthetic_base,
+                    accuracy_df=accuracy_df,
+                    judge_df=judge_df,
+                    model_name=context.model_name,
+                    branch=context.branch,
+                    generation=context.generation,
+                    seed=context.seed,
+                    policy=pvf_policy,
+                    allow_partial_inputs=bool(self.cfg.runtime.continue_on_row_error),
+                )
+                save_pvf_artifacts(
+                    result=pvf_result,
+                    filtered_path=context.artifacts["pvf_filtered_training"],
+                    rejected_path=context.artifacts["pvf_rejected_examples"],
+                    report_path=context.artifacts["pvf_report"],
+                )
+                pvf_result.filtered_training_df.to_parquet(context.artifacts["synthetic_train_next"], index=False)
+                pvf_meta = {
+                    "method": "pvf_medium",
+                    "model_name": context.model_name,
+                    "branch": context.branch,
+                    "generation": context.generation,
+                    "seed": context.seed,
+                    "threshold_score": pvf_policy.threshold_score,
+                    "min_keep_ratio": pvf_policy.min_keep_ratio,
+                    "total_candidates": pvf_result.report.total_candidates,
+                    "kept_count": pvf_result.report.kept_count,
+                    "rejected_count": pvf_result.report.rejected_count,
+                    "keep_rate": pvf_result.report.keep_rate,
+                }
+                context.artifacts["anchor_metadata"].write_text(
+                    json.dumps(pvf_meta, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                context.artifacts["used_anchor_ids"].write_text("[]", encoding="utf-8")
+                # Keep diagnostics contract explicit even for PVF branch.
+                if not context.artifacts["anchor_quality_diagnostics"].exists():
+                    pd.DataFrame(columns=["pairing_kind"]).to_parquet(
+                        context.artifacts["anchor_quality_diagnostics"], index=False
+                    )
+                return StageExecutionResult(row_count=int(len(pvf_result.filtered_training_df)))
+
+            anchor_pool = self._get_anchor_pool()
+            base_train = pd.read_parquet(context.artifacts["base_train"])
+            heldout_test = self._get_heldout()
             previously_used_anchor_ids = self._load_previously_used_anchor_ids(
                 model_name=context.model_name,
                 branch=context.branch,
                 generation=context.generation,
             )
-
-            policy = AnchorPolicy(anchor_ratio=branch_cfg.anchor_ratio, allow_reuse=False)
+            policy = AnchorPolicy(
+                anchor_ratio=branch_cfg.anchor_ratio,
+                allow_reuse=False,
+                mixing_mode=branch_cfg.mixing_mode,
+            )
             selection_context = AnchorSelectionContext(
                 model_name=context.model_name,
                 branch=context.branch,
                 generation=context.generation,
                 seed=context.seed,
             )
-
             anchoring_result = select_human_anchors(
                 anchor_pool_df=anchor_pool,
                 synthetic_df=synthetic_base,
@@ -914,6 +1002,7 @@ class ExperimentRunner:
                 mixed_dataset_path=context.artifacts["synthetic_train_next"],
                 metadata_path=context.artifacts["anchor_metadata"],
                 used_anchor_ids_path=context.artifacts["used_anchor_ids"],
+                diagnostics_path=context.artifacts["anchor_quality_diagnostics"],
             )
             return StageExecutionResult(row_count=int(len(anchoring_result.mixed_training_df)))
 

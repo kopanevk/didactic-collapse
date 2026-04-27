@@ -1,0 +1,7 @@
+run_id,seed,model_name,branch,delta_generation,evaluation_mode,delta_accuracy_mean,delta_pedagogical_score_mean,delta_silent_error_rate,delta_parse_failure_pred_rate
+baseline_series_seed42_20260421_181108,42,qwen2.5:0.5b,anchor_10,gen1_minus_gen0,inference_recycling_only,-0.06666666666666665,-0.8666666666666671,0.2666666666666667,0.03333333333333333
+baseline_series_seed42_20260421_181108,42,qwen2.5:0.5b,anchor_20,gen1_minus_gen0,inference_recycling_only,0.0,-1.1333333333333329,0.2333333333333333,0.03333333333333333
+baseline_series_seed42_20260421_181108,42,qwen2.5:0.5b,pure_recycling,gen1_minus_gen0,inference_recycling_only,0.0,-1.2666666666666666,-0.06666666666666668,0.0
+baseline_series_seed44_20260421_212920,44,qwen2.5:0.5b,anchor_10,gen1_minus_gen0,inference_recycling_only,-0.06666666666666665,-0.39999999999999947,0.1,0.03333333333333333
+baseline_series_seed44_20260421_212920,44,qwen2.5:0.5b,anchor_20,gen1_minus_gen0,inference_recycling_only,0.20000000000000007,1.7000000000000002,-0.13333333333333341,0.0
+baseline_series_seed44_20260421_212920,44,qwen2.5:0.5b,pure_recycling,gen1_minus_gen0,inference_recycling_only,0.0,-0.39999999999999947,0.06666666666666668,-0.06666666666666667

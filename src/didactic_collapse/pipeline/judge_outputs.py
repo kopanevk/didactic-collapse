@@ -65,6 +65,22 @@ def _build_failures_df(rows: list[dict[str, Any]]) -> pd.DataFrame:
     return out[_FAILURE_COLUMNS].copy()
 
 
+def _build_unresolved_failures_df(
+    *,
+    existing_failures: pd.DataFrame,
+    failure_rows_buffer: list[dict[str, Any]],
+    success_example_ids: set[str],
+) -> pd.DataFrame:
+    failures_df = pd.concat(
+        [existing_failures, _build_failures_df(failure_rows_buffer)],
+        ignore_index=True,
+    )
+    failures_df = _dedup_by_example_id(failures_df)
+    if success_example_ids and "example_id" in failures_df.columns:
+        failures_df = failures_df[~failures_df["example_id"].astype(str).isin(success_example_ids)].copy()
+    return _dedup_by_example_id(failures_df)
+
+
 def _write_progress_metadata(
     *,
     metadata_path: Path,
@@ -157,10 +173,7 @@ def run_judging(
 
     existing_success = _load_existing_success_rows(partial_path)
     existing_failures = _load_existing_failure_rows(failures_path)
-    skipped_ids = (
-        set(existing_success["example_id"].astype(str).tolist())
-        | set(existing_failures["example_id"].astype(str).tolist())
-    )
+    skipped_ids = set(existing_success["example_id"].astype(str).tolist())
 
     merged_work = merged.copy()
     merged_work["example_id"] = merged_work["example_id"].astype(str)
@@ -194,11 +207,13 @@ def run_judging(
             [existing_success, pd.DataFrame(success_rows_buffer)], ignore_index=True
         )
         success_df = _dedup_by_example_id(success_df)
+        success_example_ids = set(success_df["example_id"].astype(str).tolist())
 
-        failures_df = pd.concat(
-            [existing_failures, _build_failures_df(failure_rows_buffer)], ignore_index=True
+        failures_df = _build_unresolved_failures_df(
+            existing_failures=existing_failures,
+            failure_rows_buffer=failure_rows_buffer,
+            success_example_ids=success_example_ids,
         )
-        failures_df = _dedup_by_example_id(failures_df)
 
         success_df.to_parquet(partial_path, index=False)
         failures_df.to_parquet(failures_path, index=False)
@@ -262,7 +277,19 @@ def run_judging(
                 flush_partial()
                 raise
 
-            current_failure_count = len(existing_failures) + len(failure_rows_buffer)
+            success_example_ids = {
+                str(v)
+                for v in pd.concat([existing_success, pd.DataFrame(success_rows_buffer)], ignore_index=True)[
+                    "example_id"
+                ].tolist()
+            }
+            current_failure_count = len(
+                _build_unresolved_failures_df(
+                    existing_failures=existing_failures,
+                    failure_rows_buffer=failure_rows_buffer,
+                    success_example_ids=success_example_ids,
+                )
+            )
             if current_failure_count > max_row_failures:
                 flush_partial()
                 raise RuntimeError(

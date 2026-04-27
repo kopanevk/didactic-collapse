@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-24T19:33:02.469701",
+  "is_stub": true,
+  "trained_model_name": "qwen2.5:0.5b__ft_cmd",
+  "base_model_name": "qwen2.5:0.5b",
+  "seed": 1,
+  "input_path": "outputs\\.tmp\\unit_train_adapter\\command_backend_ok_0c1a5616\\train.parquet",
+  "note": "stub_mode_non_scientific"
+}

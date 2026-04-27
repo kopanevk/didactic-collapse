@@ -1,0 +1,3 @@
+branch,generation,sample_count,accuracy_mean,pedagogical_score_mean,silent_error_rate,parse_failure_pred_count,parse_failure_pred_rate
+pure_recycling,0,4,0.6,4.7,0.2,1,0.25
+anchor_20_append,0,4,0.8,5.7,0.08,0,0.0

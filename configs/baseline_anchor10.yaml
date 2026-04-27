@@ -1,0 +1,51 @@
+project:
+  name: didactic_collapse
+  seed: 42
+  run_tag: baseline_anchor10
+
+paths:
+  data_root: data
+  output_root: outputs
+  prompt_dir: configs/prompts
+
+models:
+  local_models:
+    - name: qwen2.5:0.5b
+      role: subject
+
+judge:
+  provider: cerebras
+  model_name: llama-3.1-8b
+  base_url: https://api.cerebras.ai/v1
+  api_key_env: CEREBRAS_API_KEY
+  timeout_sec: 180
+  max_retries: 4
+  request_delay_sec: 1.0
+
+sampling:
+  temperature: 0.2
+  top_p: 0.95
+  max_tokens: 896
+
+experiment:
+  generations: 3
+  branches:
+    - name: pure_recycling
+      anchor_ratio: 0.0
+    - name: anchor_10
+      anchor_ratio: 0.10
+
+dataset:
+  source: gsm8k
+  base_train_size: 120
+  anchor_pool_size: 400
+  heldout_test_size: 200
+
+runtime:
+  force_recompute: false
+  save_parquet: true
+  save_csv: true
+  generation_prompt_version: v2_strict_final
+  partial_save_every_n: 10
+  max_row_failures: 20
+  continue_on_row_error: true

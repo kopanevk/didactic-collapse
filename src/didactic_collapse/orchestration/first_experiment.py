@@ -148,12 +148,14 @@ def prepare_first_experiment_splits(
 def build_first_experiment_config(*, cfg: AppConfig, data_root: Path) -> AppConfig:
     raw = cfg.model_dump(mode="python")
     raw["paths"]["data_root"] = str(data_root)
-    raw["models"]["local_models"] = [{"name": "qwen2.5:0.5b", "role": "subject"}]
-    raw["experiment"]["branches"] = [
-        {"name": "pure_recycling", "anchor_ratio": 0.0},
-        {"name": "anchor_10", "anchor_ratio": 0.10},
-    ]
-    raw["experiment"]["generations"] = 2
+    # Keep experiment layout configurable via preset configs.
+    # First-experiment runner still enforces a small model list and at least one branch/generation.
+    if not raw["models"]["local_models"]:
+        raw["models"]["local_models"] = [{"name": "qwen2.5:0.5b", "role": "subject"}]
+    if not raw["experiment"]["branches"]:
+        raw["experiment"]["branches"] = [{"name": "pure_recycling", "anchor_ratio": 0.0}]
+    if int(raw["experiment"]["generations"]) < 1:
+        raw["experiment"]["generations"] = 1
     return AppConfig.model_validate(raw)
 
 
@@ -346,7 +348,7 @@ def run_first_experiment(*, cfg: AppConfig, sample_size: int) -> FirstExperiment
 
     model_name = exp_cfg.models.local_models[0].name
     branches = [b.name for b in exp_cfg.experiment.branches]
-    generations = [0, 1]
+    generations = list(range(exp_cfg.experiment.generations))
 
     runner.save_run_metadata()
     runner.run_stage("data_prep")
@@ -433,7 +435,7 @@ def resume_first_experiment(*, cfg: AppConfig, run_dir: Path) -> FirstExperiment
 
     model_name = exp_cfg.models.local_models[0].name
     branches = [b.name for b in exp_cfg.experiment.branches]
-    generations = [0, 1]
+    generations = list(range(exp_cfg.experiment.generations))
 
     runner.run_stage("data_prep")
     for branch in branches:

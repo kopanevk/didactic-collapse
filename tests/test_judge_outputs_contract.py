@@ -308,3 +308,75 @@ def test_run_judging_final_artifact_merges_partial_and_remaining() -> None:
     )
     assert len(out_df) == 3
     assert set(out_df["example_id"].tolist()) == {"ex1", "ex2", "ex3"}
+
+
+def test_run_judging_resume_retries_previous_failures_and_clears_resolved() -> None:
+    base_dir = _mk_base_dir("judge_retry_failed_rows")
+    out_path = base_dir / "judge_outputs.parquet"
+    partial_path = base_dir / "judge_partial.parquet"
+    failures_path = base_dir / "judge_failures.parquet"
+
+    pd.DataFrame(
+        [
+            {
+                "run_id": "r1",
+                "branch": "pure_recycling",
+                "generation": 0,
+                "model_name": "qwen2.5:0.5b",
+                "example_id": "ex1",
+                "judge_provider": "cerebras",
+                "judge_model": "llama-3.1-8b",
+                "clarity": 1,
+                "structure": 1,
+                "terminology": 1,
+                "reasoning_soundness": 1,
+                "overall_pedagogical_score": 4,
+                "is_silent_error": False,
+                "comment": "ok",
+            }
+        ]
+    ).to_parquet(partial_path, index=False)
+    pd.DataFrame(
+        [
+            {
+                "run_id": "r1",
+                "branch": "pure_recycling",
+                "generation": 0,
+                "model_name": "qwen2.5:0.5b",
+                "example_id": "ex2",
+                "judge_provider": "cerebras",
+                "judge_model": "llama-3.1-8b",
+                "error_category": "ConnectError",
+                "error_message": "transient",
+            }
+        ]
+    ).to_parquet(failures_path, index=False)
+
+    generations = pd.DataFrame([_single_generation_row("ex1"), _single_generation_row("ex2")])
+    questions = pd.DataFrame(
+        [
+            {"example_id": "ex1", "question": "1+0", "answer_gold": "1"},
+            {"example_id": "ex2", "question": "2-1", "answer_gold": "1"},
+        ]
+    )
+
+    out_df = run_judging(
+        client=_DummyJudgeClient(),
+        generations_df=generations,
+        questions_df=questions,
+        judge_provider="cerebras",
+        judge_model="llama-3.1-8b",
+        rubric_prompt="rubric",
+        out_path=out_path,
+        partial_path=partial_path,
+        failures_path=failures_path,
+        metadata_path=base_dir / "judge_progress.json",
+        partial_save_every_n=1,
+        max_row_failures=0,
+        continue_on_row_error=True,
+    )
+
+    assert len(out_df) == 2
+    assert set(out_df["example_id"].tolist()) == {"ex1", "ex2"}
+    failures_df = pd.read_parquet(failures_path)
+    assert failures_df.empty

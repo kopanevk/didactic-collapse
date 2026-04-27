@@ -60,6 +60,39 @@ Second real run preset (more informative signal, larger sample):
 dc-run first-experiment --config configs/second_real_experiment.yaml --sample-size 100
 ```
 
+Baseline presets for Human Anchoring sweeps:
+
+```bash
+dc-run first-experiment --config configs/baseline_anchor10.yaml --sample-size 100
+dc-run first-experiment --config configs/baseline_anchor20.yaml --sample-size 100
+```
+
+Multi-seed baseline series (pure_recycling + anchor_10 + anchor_20):
+
+```bash
+dc-run baseline-series --config configs/baseline_series.yaml --sample-size 100 --seeds 42,43
+```
+
+Gen-2 baseline trajectory mode is enabled in baseline presets (`generations: 3`, i.e. Gen-0/1/2).
+
+Re-analyze an already finished set of runs:
+
+```bash
+dc-run baseline-series-analyze outputs/runs/<run_1> outputs/runs/<run_2> --out-dir outputs/baseline_series/<tag>/tables
+```
+
+Train-stage feasibility (Gen-0 -> train -> Gen-1) with explicit mode:
+
+```bash
+dc-run train-feasibility --config configs/train_feasibility.yaml --sample-size 50
+dc-run train-feasibility --config configs/train_feasibility.yaml --sample-size 50 --run-dir outputs/runs/train_feasibility_YYYYMMDD_HHMMSS
+```
+
+`configs/train_feasibility.yaml` is set to `experiment.mode: training_recycling_feasibility`.
+By default it uses `training.backend: command` and calls `scripts/train_feasibility_adapter.py`.
+That adapter is scaffolded and fails fast until you wire a real fine-tune routine.
+For non-scientific smoke checks only, you can pass `--stub` in adapter command and set `training.allow_stub_for_smoke: true`.
+
 Old vs new run comparison export:
 
 ```bash
@@ -81,6 +114,7 @@ Expected first-experiment outputs:
 - `outputs/runs/<run_id>/figures/silent_error_vs_generation.png`
 
 Note: for real first-experiment runs, judge auth is validated before expensive stages. If `CEREBRAS_API_KEY` is missing, run fails fast before generation.
+Note: baseline-series outputs are explicitly marked as `inference_recycling_only` and are not equivalent to full retraining dynamics.
 
 ## Core ideas
 

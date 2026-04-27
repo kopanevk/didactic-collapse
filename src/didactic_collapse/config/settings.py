@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, Field
@@ -47,9 +47,16 @@ class SamplingConfig(BaseModel):
 class BranchConfig(BaseModel):
     name: str
     anchor_ratio: float = Field(ge=0.0, le=1.0)
+    mixing_mode: Literal["append", "replace"] = "append"
+    branch_type: Literal["pure_recycling", "human_anchoring", "pvf_medium"] | None = None
+    pvf_threshold_score: int = Field(default=5, ge=0, le=8)
+    pvf_min_keep_ratio: float = Field(default=0.0, ge=0.0, le=1.0)
 
 
 class ExperimentConfig(BaseModel):
+    mode: Literal["inference_recycling_only", "training_recycling_feasibility"] = (
+        "inference_recycling_only"
+    )
     generations: int = 3
     branches: list[BranchConfig]
 
@@ -71,6 +78,17 @@ class RuntimeConfig(BaseModel):
     continue_on_row_error: bool = True
 
 
+class TrainingConfig(BaseModel):
+    backend: Literal["command", "stub"] = "command"
+    command_template: str | None = None
+    command_timeout_sec: int = 3600
+    output_model_name_template: str = "{base_model}__{branch}__ft_g{generation_to}_s{seed}"
+    result_filename: str = "training_result.json"
+    run_gen1_recycling_stages: bool = False
+    allow_stub_for_smoke: bool = False
+    max_train_rows: int | None = 200
+
+
 class AppConfig(BaseModel):
     project: ProjectConfig
     paths: PathsConfig
@@ -80,6 +98,7 @@ class AppConfig(BaseModel):
     experiment: ExperimentConfig
     dataset: DatasetConfig
     runtime: RuntimeConfig
+    training: TrainingConfig = Field(default_factory=TrainingConfig)
 
 
 def load_config(path: str | Path) -> AppConfig:

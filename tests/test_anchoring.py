@@ -2,6 +2,8 @@
 
 import json
 from pathlib import Path
+import shutil
+import uuid
 
 import pandas as pd
 import pytest
@@ -184,6 +186,8 @@ def test_realized_ratio_computed_correctly() -> None:
 
     assert result.metadata.anchor_count == 2
     assert result.metadata.anchor_ratio_realized == 0.2
+    assert result.metadata.mixing_mode == "append"
+    assert result.metadata.replaced_synthetic_count == 0
 
 
 def test_ratio_rounds_to_zero_is_controlled() -> None:
@@ -218,3 +222,82 @@ def test_duplicate_anchor_pool_ids_fail() -> None:
             policy=AnchorPolicy(anchor_ratio=0.2, allow_reuse=False),
             context=AnchorSelectionContext(model_name="qwen2.5:0.5b", branch="anchor_10", generation=1, seed=99),
         )
+
+
+def test_replace_mode_replaces_rows_without_changing_total_size() -> None:
+    pool = _anchor_pool_df(30)
+    synth = _synthetic_df(10)
+
+    result = select_human_anchors(
+        anchor_pool_df=pool,
+        synthetic_df=synth,
+        base_train_df=_base_df(),
+        heldout_test_df=_heldout_df(),
+        previously_used_anchor_ids=set(),
+        policy=AnchorPolicy(anchor_ratio=0.2, allow_reuse=False, mixing_mode="replace"),
+        context=AnchorSelectionContext(model_name="qwen2.5:0.5b", branch="anchor_20_replace", generation=1, seed=99),
+    )
+
+    assert result.metadata.anchor_count == 2
+    assert result.metadata.replaced_synthetic_count == 2
+    assert len(result.replaced_synthetic_df) == 2
+    assert len(result.mixed_training_df) == len(synth)
+    assert int((result.mixed_training_df["source"] == "human_anchor").sum()) == 2
+    assert int((result.mixed_training_df["source"] == "synthetic").sum()) == 8
+    assert result.metadata.mixing_mode == "replace"
+
+
+def test_append_mode_adds_rows_and_preserves_all_synthetic() -> None:
+    pool = _anchor_pool_df(30)
+    synth = _synthetic_df(10)
+
+    result = select_human_anchors(
+        anchor_pool_df=pool,
+        synthetic_df=synth,
+        base_train_df=_base_df(),
+        heldout_test_df=_heldout_df(),
+        previously_used_anchor_ids=set(),
+        policy=AnchorPolicy(anchor_ratio=0.2, allow_reuse=False, mixing_mode="append"),
+        context=AnchorSelectionContext(model_name="qwen2.5:0.5b", branch="anchor_20_append", generation=1, seed=99),
+    )
+
+    assert result.metadata.anchor_count == 2
+    assert result.metadata.replaced_synthetic_count == 0
+    assert len(result.replaced_synthetic_df) == 0
+    assert len(result.mixed_training_df) == len(synth) + 2
+    assert int((result.mixed_training_df["source"] == "human_anchor").sum()) == 2
+    assert int((result.mixed_training_df["source"] == "synthetic").sum()) == 10
+
+
+def test_save_anchoring_artifacts_writes_diagnostics() -> None:
+    pool = _anchor_pool_df(20)
+    synth = _synthetic_df(10)
+    result = select_human_anchors(
+        anchor_pool_df=pool,
+        synthetic_df=synth,
+        base_train_df=_base_df(),
+        heldout_test_df=_heldout_df(),
+        previously_used_anchor_ids=set(),
+        policy=AnchorPolicy(anchor_ratio=0.2, allow_reuse=False, mixing_mode="replace"),
+        context=AnchorSelectionContext(model_name="qwen2.5:0.5b", branch="anchor_20_replace", generation=1, seed=99),
+    )
+    base = Path("outputs/.tmp") / f"anchor_diag_{uuid.uuid4().hex}"
+    base.mkdir(parents=True, exist_ok=True)
+    try:
+        mixed = base / "mixed.parquet"
+        meta = base / "meta.json"
+        ids = base / "ids.json"
+        diag = base / "diag.parquet"
+        save_anchoring_artifacts(
+            result=result,
+            mixed_dataset_path=mixed,
+            metadata_path=meta,
+            used_anchor_ids_path=ids,
+            diagnostics_path=diag,
+        )
+        assert diag.exists()
+        diag_df = pd.read_parquet(diag)
+        assert not diag_df.empty
+        assert "pairing_kind" in diag_df.columns
+    finally:
+        shutil.rmtree(base, ignore_errors=True)

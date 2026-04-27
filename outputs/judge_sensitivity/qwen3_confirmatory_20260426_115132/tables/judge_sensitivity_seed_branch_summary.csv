@@ -1,0 +1,4 @@
+source_seed,generation,sample_count_seed_generation,sample_count_pure,sample_count_anchor,old_llama_pure_mean,old_llama_anchor_mean,old_llama_anchor_minus_pure,qwen_pure_mean,qwen_anchor_mean,qwen_anchor_minus_pure,old_llama_pure_silent_error_rate,old_llama_anchor_silent_error_rate,qwen_pure_silent_error_rate,qwen_anchor_silent_error_rate,seed_silent_error_agreement_rate,seed_score_delta_mean,seed_branch_conclusion_changed
+71,1,16,8,8,2.5,2.5,0.0,4.25,4.75,0.5,0.375,0.375,0.875,0.75,0.5625,2.0,False
+72,1,16,8,8,2.375,4.25,1.875,5.75,5.0,-0.75,0.375,0.375,0.75,0.75,0.625,2.0625,True
+73,1,16,8,8,3.875,2.5,-1.375,5.25,5.0,-0.25,0.375,0.375,0.875,0.875,0.5,1.9375,False
