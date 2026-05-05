@@ -79,6 +79,19 @@ def _build_failures_df(rows: list[dict[str, Any]]) -> pd.DataFrame:
     return df[_GEN_FAILURE_COLUMNS].copy()
 
 
+def _drop_failures_with_success_ids(
+    *,
+    failures_df: pd.DataFrame,
+    success_ids: set[str],
+) -> pd.DataFrame:
+    if failures_df.empty or not success_ids:
+        return failures_df
+    if "example_id" not in failures_df.columns:
+        return failures_df
+    kept = failures_df[~failures_df["example_id"].astype(str).isin(success_ids)].copy()
+    return _dedup_by_example_id(kept)
+
+
 def _write_generation_metadata(
     *,
     metadata_path: Path,
@@ -125,6 +138,7 @@ def run_generation(
     partial_save_every_n: int = 10,
     max_row_failures: int = 5,
     continue_on_row_error: bool = True,
+    retry_failed_rows: bool = True,
 ) -> pd.DataFrame:
     required_cols = {"example_id", "question"}
     missing = required_cols.difference(examples_df.columns)
@@ -145,9 +159,9 @@ def run_generation(
 
     existing_success = _load_partial(partial_path)
     existing_failures = _load_failures(failures_path)
-    skipped_ids = set(existing_success["example_id"].astype(str).tolist()) | set(
-        existing_failures["example_id"].astype(str).tolist()
-    )
+    skipped_ids = set(existing_success["example_id"].astype(str).tolist())
+    if not retry_failed_rows:
+        skipped_ids |= set(existing_failures["example_id"].astype(str).tolist())
 
     work_df = examples_df.copy()
     work_df["example_id"] = work_df["example_id"].astype(str)
@@ -171,6 +185,12 @@ def run_generation(
 
         failures_df = pd.concat([existing_failures, _build_failures_df(failure_rows)], ignore_index=True)
         failures_df = _dedup_by_example_id(failures_df)
+        if retry_failed_rows:
+            success_ids = set(success_df["example_id"].astype(str).tolist())
+            failures_df = _drop_failures_with_success_ids(
+                failures_df=failures_df,
+                success_ids=success_ids,
+            )
 
         success_df.to_parquet(partial_path, index=False)
         failures_df.to_parquet(failures_path, index=False)
@@ -233,7 +253,17 @@ def run_generation(
             if not continue_on_row_error:
                 flush_partial()
                 raise
-            current_failures = len(existing_failures) + len(failure_rows)
+            success_df = pd.concat([existing_success, pd.DataFrame(success_rows)], ignore_index=True)
+            success_df = _dedup_by_example_id(success_df)
+            failures_df = pd.concat([existing_failures, _build_failures_df(failure_rows)], ignore_index=True)
+            failures_df = _dedup_by_example_id(failures_df)
+            if retry_failed_rows:
+                success_ids = set(success_df["example_id"].astype(str).tolist())
+                failures_df = _drop_failures_with_success_ids(
+                    failures_df=failures_df,
+                    success_ids=success_ids,
+                )
+            current_failures = len(failures_df)
             if current_failures > max_row_failures:
                 flush_partial()
                 raise RuntimeError(

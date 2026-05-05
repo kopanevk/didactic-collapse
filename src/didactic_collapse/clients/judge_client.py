@@ -5,9 +5,11 @@ import hashlib
 import json
 import logging
 import os
+from pathlib import Path
 import random
 import re
 import socket
+import threading
 import time
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
@@ -18,6 +20,11 @@ from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from didactic_collapse.clients.base import JudgeClient
+from didactic_collapse.clients.judge_cache import (
+    JudgeResultCache,
+    build_cache_key,
+    stable_sha256,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +116,52 @@ class CerebrasAuthPreflightResult:
     selected_key_fingerprint: str
 
 
+@dataclass
+class JudgeClientRuntimeStats:
+    cache_hits: int = 0
+    cache_misses: int = 0
+    api_calls: int = 0
+    rate_limit_retries: int = 0
+    total_sleep_sec_due_to_rate_limit: float = 0.0
+    pacing_sleeps: int = 0
+    total_sleep_sec_due_to_pacing: float = 0.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "cache_hits": int(self.cache_hits),
+            "cache_misses": int(self.cache_misses),
+            "api_calls": int(self.api_calls),
+            "rate_limit_retries": int(self.rate_limit_retries),
+            "total_sleep_sec_due_to_rate_limit": float(self.total_sleep_sec_due_to_rate_limit),
+            "pacing_sleeps": int(self.pacing_sleeps),
+            "total_sleep_sec_due_to_pacing": float(self.total_sleep_sec_due_to_pacing),
+        }
+
+
+class _ProcessRequestPacer:
+    """Small per-process request pacer keyed by provider name."""
+
+    _lock = threading.Lock()
+    _last_request_monotonic_by_key: dict[str, float] = {}
+
+    @classmethod
+    def sleep_if_needed(cls, *, key: str, min_interval_sec: float) -> float:
+        if min_interval_sec <= 0:
+            return 0.0
+        with cls._lock:
+            now = time.monotonic()
+            last = cls._last_request_monotonic_by_key.get(key)
+            if last is None:
+                cls._last_request_monotonic_by_key[key] = now
+                return 0.0
+            elapsed = now - last
+            sleep_sec = max(0.0, min_interval_sec - elapsed)
+            if sleep_sec > 0:
+                time.sleep(sleep_sec)
+            cls._last_request_monotonic_by_key[key] = time.monotonic()
+            return sleep_sec
+
+
 _FENCED_JSON_RE = re.compile(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", re.IGNORECASE)
 _INT_LIKE_RE = re.compile(r"^[+-]?\d+$")
 _PREVIEW_LEN = 320
@@ -198,20 +251,23 @@ def _parse_retry_after_seconds(retry_after_value: str | None) -> float | None:
     return max(0.0, delta)
 
 
-def _classify_openai_compatible_exception(exc: Exception) -> tuple[str, bool, float | None]:
+def _classify_openai_compatible_exception(
+    exc: Exception,
+) -> tuple[str, bool, float | None, str | None]:
     if isinstance(exc, (httpx.TimeoutException, TimeoutError, socket.timeout)):
-        return ("timeout", True, None)
+        return ("timeout", True, None, None)
     if isinstance(exc, httpx.TransportError):
-        return ("transport_error", True, None)
+        return ("transport_error", True, None, None)
     if isinstance(exc, httpx.HTTPStatusError):
         code = exc.response.status_code
         if code == 429:
-            retry_after = _parse_retry_after_seconds(exc.response.headers.get("Retry-After"))
-            return ("http_429_rate_limited", True, retry_after)
+            retry_after_raw = exc.response.headers.get("Retry-After")
+            retry_after = _parse_retry_after_seconds(retry_after_raw)
+            return ("http_429_rate_limited", True, retry_after, retry_after_raw)
         if 500 <= code <= 599:
-            return (f"http_{code}_server_error", True, None)
-        return (f"http_{code}_non_retryable", False, None)
-    return (exc.__class__.__name__.lower(), False, None)
+            return (f"http_{code}_server_error", True, None, None)
+        return (f"http_{code}_non_retryable", False, None, None)
+    return (exc.__class__.__name__.lower(), False, None, None)
 
 
 def preflight_validate_gemini_auth(
@@ -625,12 +681,30 @@ class OpenAICompatibleJudgeClient(JudgeClient):
         timeout_sec: int = 60,
         max_retries: int = 3,
         provider_name: str = "openai_compatible",
+        max_completion_tokens: int = 180,
+        comment_max_chars: int = 120,
+        cache_enabled: bool = True,
+        cache_path: str | os.PathLike[str] | None = None,
+        min_request_interval_sec: float = 0.0,
+        max_retry_after_sec: float = 60.0,
+        max_429_retries: int = 6,
+        jitter_sec: float = 0.75,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._model_name = model_name
         self._provider_name = provider_name
         self._timeout_sec = int(timeout_sec)
         self._max_retries = int(max_retries)
+        self._max_completion_tokens = int(max_completion_tokens)
+        self._comment_max_chars = int(comment_max_chars)
+        self._cache_enabled = bool(cache_enabled)
+        self._cache_path = os.fspath(cache_path) if cache_path else "outputs/cache/judge_cache.sqlite"
+        self._min_request_interval_sec = float(min_request_interval_sec)
+        self._max_retry_after_sec = float(max_retry_after_sec)
+        self._max_429_retries = int(max_429_retries)
+        self._jitter_sec = float(jitter_sec)
+        self._runtime_stats = JudgeClientRuntimeStats()
+        self._cache = JudgeResultCache(Path(self._cache_path)) if self._cache_enabled else None
         api_key = os.getenv(api_key_env)
         if not api_key:
             raise RuntimeError(f"Missing API key env: {api_key_env}")
@@ -675,24 +749,183 @@ class OpenAICompatibleJudgeClient(JudgeClient):
             ],
             "temperature": 0,
         }
+        if self._provider_name == "cerebras":
+            payload["max_completion_tokens"] = self._max_completion_tokens
+        else:
+            payload["max_tokens"] = self._max_completion_tokens
         response_format = self._build_response_format()
         if response_format is not None:
             payload["response_format"] = response_format
         return payload
 
+    def reset_runtime_stats(self) -> None:
+        self._runtime_stats = JudgeClientRuntimeStats()
+
+    def get_runtime_stats_snapshot(self) -> dict[str, Any]:
+        return self._runtime_stats.to_dict()
+
+    def _build_rubric_cache_key_payload(
+        self, *, question: str, gold_answer: str, model_output: str, rubric_prompt: str
+    ) -> dict[str, Any]:
+        return {
+            "rubric_prompt_hash": stable_sha256(rubric_prompt),
+            "question_hash": stable_sha256(question),
+            "gold_answer_hash": stable_sha256(gold_answer),
+            "model_output_hash": stable_sha256(model_output),
+            "comment_max_chars": self._comment_max_chars,
+            "max_completion_tokens": self._max_completion_tokens,
+            "response_schema": "judge_rubric_v1",
+        }
+
+    def _build_payload_hash_key_payload(self, *, payload: dict[str, Any]) -> dict[str, Any]:
+        canonical_payload = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+        return {
+            "payload_hash": stable_sha256(canonical_payload),
+            "max_completion_tokens": self._max_completion_tokens,
+        }
+
+    def _cache_lookup(self, *, cache_key: str) -> Any | None:
+        if self._cache is None:
+            return None
+        record = self._cache.get(cache_key)
+        if record is None:
+            self._runtime_stats.cache_misses += 1
+            logger.debug("judge_cache_miss provider=%s model=%s key=%s", self._provider_name, self._model_name, cache_key)
+            return None
+        self._runtime_stats.cache_hits += 1
+        logger.info("judge_cache_hit provider=%s model=%s key=%s", self._provider_name, self._model_name, cache_key)
+        return record
+
+    def _cache_store_raw(
+        self,
+        *,
+        cache_key: str,
+        call_type: str,
+        key_payload: dict[str, Any],
+        raw_response: str,
+    ) -> None:
+        if self._cache is None:
+            return
+        self._cache.put(
+            cache_key=cache_key,
+            provider=self._provider_name,
+            model_name=self._model_name,
+            call_type=call_type,
+            key_payload_json=json.dumps(key_payload, sort_keys=True, ensure_ascii=False),
+            raw_response=raw_response,
+            parsed_payload_json=None,
+            repair_applied=False,
+            repair_actions=tuple(),
+        )
+
+    def _cache_store_parsed(
+        self,
+        *,
+        cache_key: str,
+        call_type: str,
+        key_payload: dict[str, Any],
+        raw_response: str,
+        parsed: JudgeParseResult,
+    ) -> None:
+        if self._cache is None:
+            return
+        payload = {
+            "score": parsed.score.model_dump(),
+            "repair_applied": bool(parsed.repair_applied),
+            "repair_actions": list(parsed.repair_actions),
+        }
+        self._cache.put(
+            cache_key=cache_key,
+            provider=self._provider_name,
+            model_name=self._model_name,
+            call_type=call_type,
+            key_payload_json=json.dumps(key_payload, sort_keys=True, ensure_ascii=False),
+            raw_response=raw_response,
+            parsed_payload_json=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+            repair_applied=bool(parsed.repair_applied),
+            repair_actions=tuple(parsed.repair_actions),
+        )
+
+    def _cache_parse_judge_result(self, record: Any) -> JudgeParseResult | None:
+        parsed_payload_json = getattr(record, "parsed_payload_json", None)
+        if not parsed_payload_json:
+            return None
+        try:
+            payload = json.loads(parsed_payload_json)
+            score_raw = payload.get("score")
+            if not isinstance(score_raw, dict):
+                return None
+            score = JudgeRubricScore.model_validate(score_raw)
+            repair_applied = bool(payload.get("repair_applied", False))
+            repair_actions_raw = payload.get("repair_actions", [])
+            if not isinstance(repair_actions_raw, list):
+                repair_actions_raw = []
+            repair_actions = tuple(str(x) for x in repair_actions_raw)
+            return JudgeParseResult(
+                score=score,
+                repair_applied=repair_applied,
+                repair_actions=repair_actions,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("judge_cache_corrupt_parsed_record_ignored detail=%s", exc)
+            return None
+
     def _build_format_repair_prompt(self, *, previous_raw_content: str) -> str:
+        repair_comment_cap = min(80, self._comment_max_chars)
         return (
-            f"{_CEREBRAS_FORMAT_REPAIR_PROMPT}\n"
+            "Your previous response was not parseable JSON.\n"
+            "Re-emit the same evaluation as exactly one minified valid JSON object.\n"
+            "No markdown fences. No prose. No prefix/suffix.\n"
+            "Allowed keys only: clarity, structure, terminology, reasoning_soundness, "
+            "overall_pedagogical_score, is_silent_error, comment.\n"
+            f"Comment must be <={repair_comment_cap} chars, one short sentence, no line breaks.\n"
             "Previous non-JSON response:\n"
             f"{previous_raw_content}\n"
             "Return JSON only."
         )
 
-    def _request_raw_content(self, *, payload: dict[str, Any]) -> str:
+    def _request_raw_content(
+        self,
+        *,
+        payload: dict[str, Any],
+        call_type: str = "rubric_score",
+        raw_cache_key_payload: dict[str, Any] | None = None,
+        enable_raw_cache: bool = False,
+    ) -> str:
+        cache_key: str | None = None
+        if enable_raw_cache and raw_cache_key_payload is not None:
+            cache_key = build_cache_key(
+                provider=self._provider_name,
+                model_name=self._model_name,
+                call_type=call_type,
+                key_payload=raw_cache_key_payload,
+            )
+            cached = self._cache_lookup(cache_key=cache_key)
+            if cached is not None and getattr(cached, "raw_response", None):
+                return str(cached.raw_response)
+
+        sleep_sec = _ProcessRequestPacer.sleep_if_needed(
+            key=self._provider_name,
+            min_interval_sec=max(0.0, self._min_request_interval_sec),
+        )
+        if sleep_sec > 0:
+            self._runtime_stats.pacing_sleeps += 1
+            self._runtime_stats.total_sleep_sec_due_to_pacing += float(sleep_sec)
+
+        self._runtime_stats.api_calls += 1
         resp = self._http.post(f"{self._base_url}/chat/completions", json=payload)
         resp.raise_for_status()
         data = resp.json()
-        return self._extract_content_from_api_response(data)
+        raw_content = self._extract_content_from_api_response(data)
+
+        if enable_raw_cache and cache_key is not None and raw_cache_key_payload is not None:
+            self._cache_store_raw(
+                cache_key=cache_key,
+                call_type=call_type,
+                key_payload=raw_cache_key_payload,
+                raw_response=raw_content,
+            )
+        return raw_content
 
     def _compute_retry_sleep(
         self,
@@ -704,16 +937,34 @@ class OpenAICompatibleJudgeClient(JudgeClient):
         jitter_max_sec: float = 0.75,
     ) -> float:
         if retry_after_sec is not None:
-            # Some providers return extremely large Retry-After values (e.g. 86400).
-            # Cap this to keep long-running experiments resumable/fault-tolerant.
-            return min(max_backoff_sec, max(0.0, retry_after_sec))
+            bounded_retry_after = min(self._max_retry_after_sec, max(1.0, retry_after_sec))
+            return bounded_retry_after
         exp = min(max_backoff_sec, base_backoff_sec * (2 ** max(0, attempt_number - 1)))
-        jitter = random.uniform(0.0, jitter_max_sec)
+        jitter = random.uniform(0.0, min(jitter_max_sec, max(0.0, self._jitter_sec)))
         return exp + jitter
 
     def score_typed(
         self, *, question: str, gold_answer: str, model_output: str, rubric_prompt: str
     ) -> JudgeParseResult:
+        call_type = "rubric_score"
+        cache_key_payload = self._build_rubric_cache_key_payload(
+            question=question,
+            gold_answer=gold_answer,
+            model_output=model_output,
+            rubric_prompt=rubric_prompt,
+        )
+        cache_key = build_cache_key(
+            provider=self._provider_name,
+            model_name=self._model_name,
+            call_type=call_type,
+            key_payload=cache_key_payload,
+        )
+        cached = self._cache_lookup(cache_key=cache_key)
+        if cached is not None:
+            cached_parsed = self._cache_parse_judge_result(cached)
+            if cached_parsed is not None:
+                return cached_parsed
+
         user_prompt = self._build_user_prompt(
             question=question,
             gold_answer=gold_answer,
@@ -721,12 +972,21 @@ class OpenAICompatibleJudgeClient(JudgeClient):
         )
         payload = self._build_payload(rubric_prompt=rubric_prompt, user_prompt=user_prompt)
         max_attempts = max(1, self._max_retries + 1)
+        max_rate_limit_attempts = max(max_attempts, self._max_429_retries + 1)
         attempt = 1
         while True:
             try:
-                raw_content = self._request_raw_content(payload=payload)
+                raw_content = self._request_raw_content(payload=payload, call_type=call_type)
                 try:
-                    return parse_and_validate_judge_response(raw_content)
+                    parsed = parse_and_validate_judge_response(raw_content)
+                    self._cache_store_parsed(
+                        cache_key=cache_key,
+                        call_type=call_type,
+                        key_payload=cache_key_payload,
+                        raw_response=raw_content,
+                        parsed=parsed,
+                    )
+                    return parsed
                 except JudgeResponseValidationError as exc:
                     looks_truncated, raw_len, keys_detected = _non_json_diagnostics(raw_content)
                     logger.warning(
@@ -748,9 +1008,37 @@ class OpenAICompatibleJudgeClient(JudgeClient):
                                 previous_raw_content=raw_content
                             ),
                         )
-                        repair_raw_content = self._request_raw_content(payload=repair_payload)
+                        repair_key_payload = dict(cache_key_payload)
+                        repair_key_payload["format_repair"] = True
+                        repair_key = build_cache_key(
+                            provider=self._provider_name,
+                            model_name=self._model_name,
+                            call_type="rubric_format_repair",
+                            key_payload=repair_key_payload,
+                        )
+                        cached_repair = self._cache_lookup(cache_key=repair_key)
+                        if cached_repair is not None and getattr(cached_repair, "raw_response", None):
+                            repair_raw_content = str(cached_repair.raw_response)
+                        else:
+                            repair_raw_content = self._request_raw_content(
+                                payload=repair_payload,
+                                call_type="rubric_format_repair",
+                            )
                         try:
                             repaired = parse_and_validate_judge_response(repair_raw_content)
+                            self._cache_store_parsed(
+                                cache_key=cache_key,
+                                call_type=call_type,
+                                key_payload=cache_key_payload,
+                                raw_response=repair_raw_content,
+                                parsed=repaired,
+                            )
+                            self._cache_store_raw(
+                                cache_key=repair_key,
+                                call_type="rubric_format_repair",
+                                key_payload=repair_key_payload,
+                                raw_response=repair_raw_content,
+                            )
                             logger.warning(
                                 "judge_format_repair_applied provider=%s model=%s preview=%s",
                                 self._provider_name,
@@ -768,21 +1056,32 @@ class OpenAICompatibleJudgeClient(JudgeClient):
                             )
                     raise
             except Exception as exc:  # noqa: BLE001
-                category, retryable, retry_after_sec = _classify_openai_compatible_exception(exc)
-                if (not retryable) or attempt >= max_attempts:
+                category, retryable, retry_after_sec, retry_after_raw = _classify_openai_compatible_exception(exc)
+                max_allowed_attempts = max_rate_limit_attempts if category == "http_429_rate_limited" else max_attempts
+                if (not retryable) or attempt >= max_allowed_attempts:
                     raise
+
+                bounded_retry_after = None
+                if retry_after_sec is not None:
+                    bounded_retry_after = min(self._max_retry_after_sec, max(1.0, retry_after_sec))
                 sleep_sec = self._compute_retry_sleep(
                     attempt_number=attempt,
                     retry_after_sec=retry_after_sec,
                 )
+                if category == "http_429_rate_limited":
+                    self._runtime_stats.rate_limit_retries += 1
+                    self._runtime_stats.total_sleep_sec_due_to_rate_limit += float(sleep_sec)
                 logger.warning(
-                    "judge_retry provider=%s model=%s category=%s attempt=%d/%d sleep_sec=%.2f timeout_read_sec=%s",
+                    "judge_retry provider=%s model=%s call_type=%s category=%s attempt=%d/%d sleep_sec=%.2f retry_after_raw=%s bounded_retry_after=%s timeout_read_sec=%s",
                     self._provider_name,
                     self._model_name,
+                    call_type,
                     category,
                     attempt,
-                    max_attempts,
+                    max_allowed_attempts,
                     sleep_sec,
+                    retry_after_raw,
+                    bounded_retry_after,
                     self._timeout_sec,
                 )
                 time.sleep(sleep_sec)
@@ -809,6 +1108,14 @@ class CerebrasJudgeClient(OpenAICompatibleJudgeClient):
         api_key_env: str = "CEREBRAS_API_KEY",
         timeout_sec: int = 60,
         max_retries: int = 3,
+        max_completion_tokens: int = 180,
+        comment_max_chars: int = 120,
+        cache_enabled: bool = True,
+        cache_path: str | os.PathLike[str] | None = None,
+        min_request_interval_sec: float = 0.8,
+        max_retry_after_sec: float = 60.0,
+        max_429_retries: int = 6,
+        jitter_sec: float = 0.75,
     ) -> None:
         self._preflight = preflight_validate_cerebras_auth(api_key_env=api_key_env)
         super().__init__(
@@ -818,10 +1125,32 @@ class CerebrasJudgeClient(OpenAICompatibleJudgeClient):
             timeout_sec=timeout_sec,
             max_retries=max_retries,
             provider_name="cerebras",
+            max_completion_tokens=max_completion_tokens,
+            comment_max_chars=comment_max_chars,
+            cache_enabled=cache_enabled,
+            cache_path=cache_path,
+            min_request_interval_sec=min_request_interval_sec,
+            max_retry_after_sec=max_retry_after_sec,
+            max_429_retries=max_429_retries,
+            jitter_sec=jitter_sec,
         )
 
     def _build_system_prompt(self, rubric_prompt: str) -> str:
-        return f"{_CEREBRAS_JSON_CONTRACT}\n\nRubric:\n{rubric_prompt}"
+        return (
+            "You are an evaluation engine. Output must be exactly one JSON object and nothing else.\n"
+            "No markdown fences. No prefix/suffix text. No explanations.\n"
+            "Do not output any keys other than the required rubric keys.\n"
+            "Required fields and types:\n"
+            "- clarity: integer in [0,2]\n"
+            "- structure: integer in [0,2]\n"
+            "- terminology: integer in [0,2]\n"
+            "- reasoning_soundness: integer in [0,2]\n"
+            "- overall_pedagogical_score: integer in [0,8], must equal clarity+structure+terminology+reasoning_soundness\n"
+            "- is_silent_error: boolean\n"
+            f"- comment: one short sentence string, <={self._comment_max_chars} chars, no markdown, no line breaks, avoid quotes\n"
+            "Return only the JSON object.\n\n"
+            f"Rubric:\n{rubric_prompt}"
+        )
 
     def _build_user_prompt(self, *, question: str, gold_answer: str, model_output: str) -> str:
         return (
@@ -830,7 +1159,7 @@ class CerebrasJudgeClient(OpenAICompatibleJudgeClient):
             f"Gold answer: {gold_answer}\n"
             f"Model output: {model_output}\n"
             "Remember: output only JSON object with required fields. "
-            "Comment must be one short sentence <=120 chars, no line breaks."
+            f"Comment must be one short sentence <={self._comment_max_chars} chars, no line breaks."
         )
 
     def _build_payload(self, *, rubric_prompt: str, user_prompt: str) -> dict[str, Any]:
@@ -951,6 +1280,14 @@ def build_cerebras_judge_client(
     api_key_env: str = "CEREBRAS_API_KEY",
     timeout_sec: int = 60,
     max_retries: int = 3,
+    max_completion_tokens: int = 180,
+    comment_max_chars: int = 120,
+    cache_enabled: bool = True,
+    cache_path: str | os.PathLike[str] | None = None,
+    min_request_interval_sec: float = 0.8,
+    max_retry_after_sec: float = 60.0,
+    max_429_retries: int = 6,
+    jitter_sec: float = 0.75,
 ) -> CerebrasJudgeClient:
     """Factory for Cerebras judge client used by both smoke-check and pipeline."""
     return CerebrasJudgeClient(
@@ -959,6 +1296,14 @@ def build_cerebras_judge_client(
         api_key_env=api_key_env,
         timeout_sec=timeout_sec,
         max_retries=max_retries,
+        max_completion_tokens=max_completion_tokens,
+        comment_max_chars=comment_max_chars,
+        cache_enabled=cache_enabled,
+        cache_path=cache_path,
+        min_request_interval_sec=min_request_interval_sec,
+        max_retry_after_sec=max_retry_after_sec,
+        max_429_retries=max_429_retries,
+        jitter_sec=jitter_sec,
     )
 
 
@@ -974,6 +1319,15 @@ def cerebras_judge_auth_smoke_check(
     base_url: str,
     api_key_env: str = "CEREBRAS_API_KEY",
     timeout_sec: int = 60,
+    max_retries: int = 3,
+    max_completion_tokens: int = 180,
+    comment_max_chars: int = 120,
+    cache_enabled: bool = True,
+    cache_path: str | os.PathLike[str] | None = None,
+    min_request_interval_sec: float = 0.8,
+    max_retry_after_sec: float = 60.0,
+    max_429_retries: int = 6,
+    jitter_sec: float = 0.75,
 ) -> str:
     """Run minimal Cerebras OpenAI-compatible call via the same auth path as pipeline."""
     client = build_cerebras_judge_client(
@@ -981,6 +1335,15 @@ def cerebras_judge_auth_smoke_check(
         base_url=base_url,
         api_key_env=api_key_env,
         timeout_sec=timeout_sec,
+        max_retries=max_retries,
+        max_completion_tokens=max_completion_tokens,
+        comment_max_chars=comment_max_chars,
+        cache_enabled=cache_enabled,
+        cache_path=cache_path,
+        min_request_interval_sec=min_request_interval_sec,
+        max_retry_after_sec=max_retry_after_sec,
+        max_429_retries=max_429_retries,
+        jitter_sec=jitter_sec,
     )
     return client.smoke_check()
 
@@ -991,6 +1354,15 @@ def cerebras_judge_rubric_format_check(
     base_url: str,
     api_key_env: str = "CEREBRAS_API_KEY",
     timeout_sec: int = 60,
+    max_retries: int = 3,
+    max_completion_tokens: int = 180,
+    comment_max_chars: int = 120,
+    cache_enabled: bool = True,
+    cache_path: str | os.PathLike[str] | None = None,
+    min_request_interval_sec: float = 0.8,
+    max_retry_after_sec: float = 60.0,
+    max_429_retries: int = 6,
+    jitter_sec: float = 0.75,
 ) -> dict[str, Any]:
     """Check real Cerebras rubric-format readiness via the same parser as pipeline."""
     client = build_cerebras_judge_client(
@@ -998,6 +1370,15 @@ def cerebras_judge_rubric_format_check(
         base_url=base_url,
         api_key_env=api_key_env,
         timeout_sec=timeout_sec,
+        max_retries=max_retries,
+        max_completion_tokens=max_completion_tokens,
+        comment_max_chars=comment_max_chars,
+        cache_enabled=cache_enabled,
+        cache_path=cache_path,
+        min_request_interval_sec=min_request_interval_sec,
+        max_retry_after_sec=max_retry_after_sec,
+        max_429_retries=max_429_retries,
+        jitter_sec=jitter_sec,
     )
     parsed = client.rubric_format_check()
     return parsed.score.model_dump()

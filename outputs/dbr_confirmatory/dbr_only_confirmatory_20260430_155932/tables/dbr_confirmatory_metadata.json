@@ -1,0 +1,8 @@
+{
+  "evaluation_mode": "inference_recycling_only",
+  "run_count": 1,
+  "run_dirs": [
+    "outputs\\runs\\dbr_only_confirmatory_seed222_20260430_152134"
+  ],
+  "notes": "DBR confirmatory multi-seed analysis (inference_recycling_only)."
+}

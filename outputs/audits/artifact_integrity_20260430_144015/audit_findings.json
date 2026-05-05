@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-04-30T14:40:15.761113",
+  "outputs_root": "C:\\Users\\kiris\\Documents\\New project\\outputs",
+  "selected_run_dirs": [
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed212_20260428_230709",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed213_20260430_115105"
+  ],
+  "selected_analysis_dirs": [
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\dbr_confirmatory\\dbr_article_evidence_20260430_144004"
+  ],
+  "finding_count": 2,
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "category": "summary",
+      "target": "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+      "message": "Summary metric mismatch: pedagogical_score_mean",
+      "details": {
+        "run_dir": "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+        "model_name": "qwen2.5:0.5b",
+        "branch": "dbr_medium",
+        "generation": 0.0,
+        "summary_value": 5.44,
+        "recomputed_value": 5.38,
+        "abs_diff": 0.0600000000000005
+      }
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "summary",
+      "target": "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+      "message": "Summary metric mismatch: silent_error_rate",
+      "details": {
+        "run_dir": "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+        "model_name": "qwen2.5:0.5b",
+        "branch": "dbr_medium",
+        "generation": 0.0,
+        "summary_value": 0.3,
+        "recomputed_value": 0.28,
+        "abs_diff": 0.019999999999999962
+      }
+    }
+  ]
+}

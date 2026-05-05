@@ -1,0 +1,277 @@
+2026-04-30 17:23:22,456 INFO [didactic_collapse.clients.judge_client] cerebras_auth_preflight source=env:CEREBRAS_API_KEY key=csk-...4d
+2026-04-30 17:23:22,542 INFO [didactic_collapse.orchestration.runner] Skipping completed stage data_prep
+2026-04-30 17:23:22,632 INFO [didactic_collapse.orchestration.runner] All context stages already completed for model=qwen2.5:0.5b branch=pure_recycling gen=0
+2026-04-30 17:23:22,712 INFO [didactic_collapse.clients.judge_client] cerebras_auth_preflight source=env:CEREBRAS_API_KEY key=csk-...4d
+2026-04-30 17:23:23,231 INFO [didactic_collapse.pipeline.judge_outputs] judge_request_pacing_enabled provider=cerebras model=llama-3.1-8b delay_sec=2.200 batch_size=30
+2026-04-30 17:23:23,232 INFO [didactic_collapse.pipeline.judge_outputs] judge_row_resume_state total=100 skipped_from_checkpoint=70 remaining=30 unique_inputs=30 duplicates=0 partial=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_1\judge_partial.parquet failures=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_1\judge_failures.parquet dedupe_map=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_1\judge_dedupe_map.parquet
+2026-04-30 17:23:23,241 INFO [didactic_collapse.clients.judge_client] judge_cache_hit provider=cerebras model=llama-3.1-8b key=daf4094bf2fa0dfa476528a3f8fc8040e69d1b64315acb2ae0679028f5e33998
+2026-04-30 17:23:25,445 INFO [didactic_collapse.clients.judge_client] judge_cache_hit provider=cerebras model=llama-3.1-8b key=10f11c047576e40350a8d88336bc55ff288a41ddcbff3f4eafa0d46d2beed6fb
+2026-04-30 17:23:27,648 INFO [didactic_collapse.clients.judge_client] judge_cache_hit provider=cerebras model=llama-3.1-8b key=5294d3136f2e0b17eea57b7b8b7382bd4661cce3cf2ed2118c9225eb4c054ba5
+2026-04-30 17:23:29,850 INFO [didactic_collapse.clients.judge_client] judge_cache_hit provider=cerebras model=llama-3.1-8b key=d91487e833dd401dba779454bda50ec95bff629753a797c43ef4817d9bd66957
+2026-04-30 17:23:32,756 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:23:35,299 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:23:37,689 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:23:37,689 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:24:08,036 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:24:08,037 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:24:38,323 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:24:38,325 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=3/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:25:08,929 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:25:11,330 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:25:11,330 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:25:41,644 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:25:41,644 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:26:12,079 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:26:14,477 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:26:14,478 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:26:44,797 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:26:44,797 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:27:15,316 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:27:17,719 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:27:17,721 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:27:48,031 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:27:48,031 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:28:18,544 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:28:18,565 INFO [didactic_collapse.pipeline.judge_outputs] judge_progress processed=10/30 failed=0 completed=80
+2026-04-30 17:28:20,944 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:28:20,945 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:28:51,306 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:28:51,307 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:29:21,790 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:29:24,187 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:29:24,188 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:29:54,594 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:29:54,595 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:30:24,965 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:30:24,965 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=3/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:30:55,415 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:30:57,798 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:30:57,799 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:31:28,121 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:31:28,121 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:31:58,564 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:32:00,968 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:32:00,969 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:32:31,273 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:32:31,274 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:33:01,573 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:33:01,573 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=3/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:33:32,171 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:33:34,562 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:33:34,563 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:34:04,908 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:34:04,908 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:34:35,202 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:34:35,203 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=3/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:35:05,722 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:35:08,188 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:35:08,189 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:35:38,578 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:35:38,579 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:36:09,022 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:36:11,436 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:36:11,437 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:36:48,269 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:36:50,692 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:36:50,693 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:37:21,000 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:37:21,001 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:37:51,583 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:37:53,980 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:37:53,981 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:38:24,293 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:38:24,294 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:38:54,856 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:38:57,337 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:38:57,377 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:39:27,728 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:39:27,729 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:40:00,321 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:40:00,350 INFO [didactic_collapse.pipeline.judge_outputs] judge_progress processed=20/30 failed=0 completed=90
+2026-04-30 17:40:02,745 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:40:02,746 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:40:33,164 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:40:33,165 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:41:03,849 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:41:06,231 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:41:06,273 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:41:36,640 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:41:36,641 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:42:07,390 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:42:09,792 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:42:09,793 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:42:40,147 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:42:40,148 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:43:10,502 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:43:10,502 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=3/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:43:40,983 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:43:43,383 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:43:43,383 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:44:13,715 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:44:13,715 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:44:45,251 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:44:47,640 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:44:47,641 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:45:17,972 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:45:17,973 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:45:49,298 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:45:51,703 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:45:51,704 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:46:22,082 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:46:22,083 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:46:53,388 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:46:53,427 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=3/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:47:24,011 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:47:26,409 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:47:26,410 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:47:57,491 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:47:59,877 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:47:59,878 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:48:30,191 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:48:30,192 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:49:01,195 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:49:03,576 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:49:03,577 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:49:33,859 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:49:33,860 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:50:04,971 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:50:07,366 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:50:07,366 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:50:37,682 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:50:37,683 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:51:07,979 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:51:07,979 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=3/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:51:38,614 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:51:38,616 WARNING [didactic_collapse.clients.judge_client] provider_overall_inconsistent provider_overall=0 repaired_overall=1
+2026-04-30 17:51:38,663 INFO [didactic_collapse.pipeline.judge_outputs] judge_progress processed=30/30 failed=0 completed=100
+2026-04-30 17:51:38,685 INFO [didactic_collapse.pipeline.judge_outputs] judge_stage_summary total=100 completed=100 failed=0 skipped=70 unique_inputs=30 duplicate_count=0 final=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_1\judge_outputs.parquet partial=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_1\judge_partial.parquet failures=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_1\judge_failures.parquet dedupe_map=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_1\judge_dedupe_map.parquet
+2026-04-30 17:51:39,343 INFO [didactic_collapse.pipeline.generate_outputs] generation_row_resume_state total=100 skipped_from_checkpoint=0 remaining=100 partial=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\generation_partial.parquet failures=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\generation_failures.parquet
+2026-04-30 17:51:45,501 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:46,800 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:48,313 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:49,127 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:50,084 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:50,831 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:51,755 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:53,327 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:55,205 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:56,556 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:56,575 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=10/100 failed=0 completed=10
+2026-04-30 17:51:57,627 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:51:59,006 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:00,349 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:01,662 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:03,303 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:04,165 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:05,253 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:06,379 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:07,560 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:08,482 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:08,495 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=20/100 failed=0 completed=20
+2026-04-30 17:52:10,198 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:11,702 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:13,100 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:14,564 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:15,342 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:16,743 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:18,491 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:20,385 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:21,677 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:22,663 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:22,693 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=30/100 failed=0 completed=30
+2026-04-30 17:52:24,372 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:25,754 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:26,930 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:28,333 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:30,115 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:32,517 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:34,309 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:36,013 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:37,165 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:38,299 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:38,310 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=40/100 failed=0 completed=40
+2026-04-30 17:52:39,435 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:40,492 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:41,487 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:42,847 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:44,060 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:45,734 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:46,654 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:50,350 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:51,430 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:52,374 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:52,382 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=50/100 failed=0 completed=50
+2026-04-30 17:52:53,262 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:54,227 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:55,407 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:57,029 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:57,849 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:52:59,462 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:00,273 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:01,694 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:02,597 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:03,660 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:03,670 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=60/100 failed=0 completed=60
+2026-04-30 17:53:04,744 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:05,649 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:06,871 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:08,871 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:09,812 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:10,657 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:12,108 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:13,656 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:14,446 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:15,492 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:15,500 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=70/100 failed=0 completed=70
+2026-04-30 17:53:17,058 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:17,875 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:18,779 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:19,971 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:22,173 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:23,607 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:25,067 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:26,088 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:27,179 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:28,608 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:28,621 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=80/100 failed=0 completed=80
+2026-04-30 17:53:29,739 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:31,616 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:32,562 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:33,534 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:34,960 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:35,842 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:36,636 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:37,546 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:39,106 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:40,006 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:40,015 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=90/100 failed=0 completed=90
+2026-04-30 17:53:40,988 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:42,347 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:44,611 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:45,397 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:46,396 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:47,846 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:49,079 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:49,911 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:51,008 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:52,077 INFO [httpx] HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-04-30 17:53:52,086 INFO [didactic_collapse.pipeline.generate_outputs] generation_progress processed=100/100 failed=0 completed=100
+2026-04-30 17:53:52,106 INFO [didactic_collapse.pipeline.generate_outputs] generation_stage_summary total=100 completed=100 failed=0 skipped=0 final=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\model_outputs.parquet partial=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\generation_partial.parquet failures=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\generation_failures.parquet
+2026-04-30 17:53:52,351 INFO [didactic_collapse.pipeline.judge_outputs] judge_request_pacing_enabled provider=cerebras model=llama-3.1-8b delay_sec=2.200 batch_size=100
+2026-04-30 17:53:52,351 INFO [didactic_collapse.pipeline.judge_outputs] judge_row_resume_state total=100 skipped_from_checkpoint=0 remaining=100 unique_inputs=100 duplicates=0 partial=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\judge_partial.parquet failures=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\judge_failures.parquet dedupe_map=outputs\runs\dbr_only_confirmatory_seed223_20260430_160138\qwen2.5_0.5b\pure_recycling\gen_2\judge_dedupe_map.parquet
+2026-04-30 17:53:52,783 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:53:55,496 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:53:57,897 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:53:57,898 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:54:28,259 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:54:28,260 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:54:58,971 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:55:01,357 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:55:01,357 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:55:31,705 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:55:31,705 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:56:02,877 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-30 17:56:05,272 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:56:05,272 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=1/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90
+2026-04-30 17:56:35,576 INFO [httpx] HTTP Request: POST https://api.cerebras.ai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-30 17:56:35,577 WARNING [didactic_collapse.clients.judge_client] judge_retry provider=cerebras model=llama-3.1-8b call_type=rubric_score category=http_429_rate_limited attempt=2/7 sleep_sec=30.00 retry_after_raw=86400 bounded_retry_after=30.0 timeout_read_sec=90

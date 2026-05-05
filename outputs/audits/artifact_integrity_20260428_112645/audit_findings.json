@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-04-28T11:26:45.824181",
+  "outputs_root": "C:\\Users\\kiris\\Documents\\New project\\outputs",
+  "selected_run_dirs": [
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\anchoring_confirmatory_append_seed51_20260422_223453",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\anchoring_confirmatory_append_seed52_20260423_111039",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\anchoring_confirmatory_append_seed53_20260423_221619",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\training_confirmatory_anchor20_seed71_20260425_141959",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\training_confirmatory_anchor20_seed72_20260426_101349",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\training_confirmatory_anchor20_seed73_20260426_103916",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\pvf_confirmatory_seed91_20260427_094105",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\pvf_confirmatory_seed92_20260427_100222",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\pvf_confirmatory_seed93_20260427_102402",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\soft_pvf_confirmatory_seed141_20260427_223238",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\soft_pvf_confirmatory_seed142_20260427_225409",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\soft_pvf_confirmatory_seed143_20260427_231611",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\soft_pvf_policy_tuning_20260427_212735",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\soft_pvf_shakedown_20260427_201349"
+  ],
+  "selected_analysis_dirs": [
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\judge_sensitivity\\qwen3_confirmatory_20260426_115132",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\judge_sensitivity\\pairwise_confirmatory_20260426_122530",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\pvf_confirmatory\\series_20260427_1840",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\soft_pvf_confirmatory\\soft_pvf_confirmatory_20260428_090431",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\baseline_series\\anchoring_confirmatory_append_3seed_20260424"
+  ],
+  "finding_count": 2,
+  "findings": [
+    {
+      "severity": "HIGH",
+      "category": "manifest",
+      "target": "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\anchoring_confirmatory_append_seed53_20260423_221619\\qwen2.5_0.5b\\pure_recycling\\gen_0\\stage_manifest.json",
+      "message": "Context stage not completed",
+      "details": {
+        "stage_name": "synthetic_build",
+        "status": "pending",
+        "model_dir": "qwen2.5_0.5b",
+        "branch": "pure_recycling",
+        "generation": 0
+      }
+    },
+    {
+      "severity": "HIGH",
+      "category": "manifest",
+      "target": "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\anchoring_confirmatory_append_seed53_20260423_221619\\qwen2.5_0.5b\\pure_recycling\\gen_0\\stage_manifest.json",
+      "message": "Context stage not completed",
+      "details": {
+        "stage_name": "anchoring",
+        "status": "pending",
+        "model_dir": "qwen2.5_0.5b",
+        "branch": "pure_recycling",
+        "generation": 0
+      }
+    }
+  ]
+}

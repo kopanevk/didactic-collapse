@@ -88,6 +88,8 @@ def test_cerebras_valid_rubric_json_passes_validation(monkeypatch: pytest.Monkey
         base_url="https://api.cerebras.ai/v1",
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=10,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
 
     calls = {"count": 0}
@@ -134,6 +136,8 @@ def test_cerebras_chatty_output_fails_without_retry_storm(
         base_url="https://api.cerebras.ai/v1",
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=10,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     calls = {"count": 0}
 
@@ -157,7 +161,7 @@ def test_cerebras_chatty_output_fails_without_retry_storm(
             rubric_prompt="rubric",
         )
 
-    assert calls["count"] == 1
+    assert calls["count"] == 2
     assert "judge_validation_failed" in caplog.text
     assert "preview=Great answer!" in caplog.text
 
@@ -170,6 +174,8 @@ def test_validation_errors_are_not_retried(monkeypatch: pytest.MonkeyPatch) -> N
         base_url="https://api.cerebras.ai/v1",
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=10,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     calls = {"count": 0}
 
@@ -199,6 +205,8 @@ def test_build_cerebras_client_uses_explicit_provider_class() -> None:
         base_url="https://api.cerebras.ai/v1",
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=10,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     assert isinstance(client, CerebrasJudgeClient)
 
@@ -236,6 +244,15 @@ def test_rubric_check_uses_same_cerebras_factory(monkeypatch: pytest.MonkeyPatch
         base_url: str,
         api_key_env: str = "CEREBRAS_API_KEY",
         timeout_sec: int = 60,
+        max_retries: int = 3,
+        max_completion_tokens: int = 180,
+        comment_max_chars: int = 120,
+        cache_enabled: bool = True,
+        cache_path: str | None = None,
+        min_request_interval_sec: float = 0.8,
+        max_retry_after_sec: float = 60.0,
+        max_429_retries: int = 6,
+        jitter_sec: float = 0.75,
     ):
         calls.append((model_name, base_url, api_key_env))
         return _DummyClient()

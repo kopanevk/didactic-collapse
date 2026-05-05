@@ -1,0 +1,2 @@
+k3_pair_rate_mean,k5_pair_rate_mean,k3_quality_gap_mean,k5_quality_gap_mean,csr_best_evidence,csr_branch_outcome_summary,main_limitation
+0.5111111111111111,0.5888888888888889,5.396776018099548,5.802941176470587,High contrast gaps and strong best-vs-worst separation.,CSR improves over pure on some Gen2 metrics but trails DBR on pedagogy.,Pair construction bottleneck remains dominated by best_not_correct no-pair cases.

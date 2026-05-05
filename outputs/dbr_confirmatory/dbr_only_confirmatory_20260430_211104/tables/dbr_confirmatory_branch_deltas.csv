@@ -1,0 +1,4 @@
+run_id,seed,model_name,generation,comparison,anchor_branch,evaluation_mode,delta_accuracy_mean,delta_pedagogical_score_mean,delta_silent_error_rate,delta_parse_failure_pred_rate
+dbr_only_confirmatory_seed223_20260430_160138,223,qwen2.5:0.5b,0,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,-0.009999999999999953,0.3700000000000001,0.020000000000000018,0.049999999999999996
+dbr_only_confirmatory_seed223_20260430_160138,223,qwen2.5:0.5b,1,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,-0.010000000000000009,0.3699999999999992,-0.010000000000000009,-0.010000000000000002
+dbr_only_confirmatory_seed223_20260430_160138,223,qwen2.5:0.5b,2,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.019999999999999962,-0.09000000000000075,0.08000000000000002,0.049999999999999996

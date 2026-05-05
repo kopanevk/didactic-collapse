@@ -1,0 +1,16 @@
+model_name,branch,generation,defect_name,seed_count,rate_before_mean,rate_after_mean,delta_after_minus_before
+qwen2.5:0.5b,dbr_medium,0,incorrect_answer,1,0.57,0.5567010309278351,-0.013298969072164879
+qwen2.5:0.5b,dbr_medium,0,low_reasoning,1,0.48,0.4742268041237113,-0.0057731958762886615
+qwen2.5:0.5b,dbr_medium,0,low_structure,1,0.38,0.38144329896907214,0.0014432989690721376
+qwen2.5:0.5b,dbr_medium,0,parse_failure,1,0.03,0.0,-0.03
+qwen2.5:0.5b,dbr_medium,0,silent_error,1,0.18,0.17525773195876287,-0.004742268041237119
+qwen2.5:0.5b,dbr_medium,1,incorrect_answer,1,0.55,0.53125,-0.018750000000000044
+qwen2.5:0.5b,dbr_medium,1,low_reasoning,1,0.45,0.4375,-0.012500000000000011
+qwen2.5:0.5b,dbr_medium,1,low_structure,1,0.35,0.3333333333333333,-0.016666666666666663
+qwen2.5:0.5b,dbr_medium,1,parse_failure,1,0.04,0.0,-0.04
+qwen2.5:0.5b,dbr_medium,1,silent_error,1,0.26,0.25,-0.010000000000000009
+qwen2.5:0.5b,dbr_medium,2,incorrect_answer,1,0.53,0.5154639175257731,-0.014536082474226886
+qwen2.5:0.5b,dbr_medium,2,low_reasoning,1,0.44,0.422680412371134,-0.017319587628865984
+qwen2.5:0.5b,dbr_medium,2,low_structure,1,0.36,0.35051546391752575,-0.009484536082474238
+qwen2.5:0.5b,dbr_medium,2,parse_failure,1,0.03,0.0,-0.03
+qwen2.5:0.5b,dbr_medium,2,silent_error,1,0.26,0.23711340206185566,-0.02288659793814435

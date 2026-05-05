@@ -1,0 +1,2 @@
+n_pairs,qwen_dbr_win_rate,qwen_pure_win_rate,qwen_tie_rate,qwen_dbr_minus_pure_win_rate,qwen_conclusion,llama_aggregate_pedagogy_delta_dbr_minus_pure,llama_aggregate_conclusion,conclusion_changed_vs_llama_aggregate
+1,0.0,1.0,0.0,-1.0,pure_preferred,0.14611111111111116,dbr_preferred,True

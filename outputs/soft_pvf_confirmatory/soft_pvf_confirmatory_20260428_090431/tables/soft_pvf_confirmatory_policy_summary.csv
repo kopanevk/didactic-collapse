@@ -1,0 +1,4 @@
+model_name,branch,policy_name,generation,seed_count,accuracy_mean,pedagogical_score_mean,silent_error_rate_mean,keep_rate_mean,effective_keep_rate_mean,mean_assigned_weight_mean,rank_accuracy_desc,rank_pedagogy_desc,rank_silent_error_asc,rank_keep_rate_desc,evaluation_mode
+qwen2.5:0.5b,pure_recycling,pure_recycling,2,3,0.39999999999999997,4.786666666666667,0.2866666666666667,,,,3.0,1.0,3.0,3.0,inference_recycling_only
+qwen2.5:0.5b,soft_pvf_medium,soft_pvf_medium,2,3,0.43333333333333335,4.626666666666667,0.2333333333333333,0.43999999999999995,0.4463333333333334,0.4463333333333334,1.0,2.0,1.0,1.0,inference_recycling_only
+qwen2.5:0.5b,soft_pvf_noisy_keep,soft_pvf_noisy_keep,2,3,0.4066666666666667,4.286666666666666,0.24666666666666667,0.42,0.452,0.452,2.0,3.0,2.0,2.0,inference_recycling_only

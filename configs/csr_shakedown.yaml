@@ -1,0 +1,104 @@
+project:
+  name: didactic_collapse
+  seed: 1
+  run_tag: csr_shakedown
+
+paths:
+  data_root: data
+  output_root: outputs
+  prompt_dir: configs/prompts
+
+models:
+  local_models:
+    - name: qwen2.5:0.5b
+      role: subject
+
+judge:
+  provider: cerebras
+  model_name: llama-3.1-8b
+  base_url: https://api.cerebras.ai/v1
+  api_key_env: CEREBRAS_API_KEY
+  timeout_sec: 180
+  max_retries: 4
+  request_delay_sec: 1.5
+  max_completion_tokens: 180
+  comment_max_chars: 120
+  cache_enabled: true
+  cache_path: outputs/cache/judge_cache.sqlite
+  cerebras_min_request_interval_sec: 1.5
+  cerebras_max_retry_after_sec: 60.0
+  cerebras_max_429_retries: 6
+  cerebras_jitter_sec: 0.75
+
+sampling:
+  temperature: 0.2
+  top_p: 0.95
+  max_tokens: 896
+
+experiment:
+  mode: inference_recycling_only
+  generations: 3
+  branches:
+    - name: pure_recycling
+      branch_type: pure_recycling
+      anchor_ratio: 0.0
+      mixing_mode: append
+    - name: dbr_medium
+      branch_type: dbr_medium
+      anchor_ratio: 0.0
+      mixing_mode: append
+      dbr_target_size_ratio: 1.0
+      dbr_min_selection_rate: 0.80
+      dbr_budget_parse_failure: 0.00
+      dbr_budget_silent_error: 0.10
+      dbr_budget_incorrect_answer: 0.30
+      dbr_budget_low_reasoning: 0.25
+      dbr_budget_low_structure: 0.30
+      dbr_allow_parse_failure_fallback: false
+    - name: csr_medium
+      branch_type: csr_medium
+      anchor_ratio: 0.0
+      mixing_mode: append
+      csr_num_candidates: 3
+      csr_candidate_temperature: 0.7
+      csr_min_pair_quality_gap: 2.0
+      csr_require_best_correct: true
+      csr_require_best_non_silent: true
+      csr_allow_worst_incorrect: true
+      csr_allow_worst_silent: true
+      csr_max_no_pair_rate_warn: 0.60
+
+dataset:
+  source: gsm8k
+  base_train_size: 120
+  anchor_pool_size: 400
+  heldout_test_size: 200
+
+runtime:
+  force_recompute: false
+  save_parquet: true
+  save_csv: true
+  generation_prompt_version: v2_strict_final
+  partial_save_every_n: 10
+  max_row_failures: 10
+  continue_on_row_error: true
+
+training:
+  backend: command
+  command_template: >
+    python scripts/train_feasibility_adapter.py
+    --input "{train_path}"
+    --output-dir "{output_dir}"
+    --base-model "{base_model}"
+    --target-model "{target_model}"
+    --seed {seed}
+    --base-url http://localhost:11434
+    --timeout-sec 900
+    --max-examples 32
+    --max-chars 5000
+  command_timeout_sec: 3600
+  output_model_name_template: "{base_model}__{branch}__ft_g{generation_to}_s{seed}"
+  result_filename: training_result.json
+  run_gen1_recycling_stages: false
+  allow_stub_for_smoke: false
+  max_train_rows: 200

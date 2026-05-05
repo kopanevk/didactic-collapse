@@ -1,0 +1,22 @@
+{
+  "stage": "judge",
+  "total_rows": 3,
+  "completed_rows": 3,
+  "failed_rows": 0,
+  "skipped_from_checkpoint": 1,
+  "processed_this_run": 2,
+  "partial_save_every_n": 2,
+  "max_row_failures": 2,
+  "continue_on_row_error": true,
+  "request_delay_sec": 0.0,
+  "unique_judge_inputs": 2,
+  "duplicate_count": 0,
+  "api_calls_saved_by_dedupe": 0,
+  "cache_hits": 0,
+  "cache_misses": 0,
+  "api_calls": 0,
+  "rate_limit_retries": 0,
+  "total_sleep_sec_due_to_rate_limit": 0.0,
+  "pacing_sleeps": 0,
+  "total_sleep_sec_due_to_pacing": 0.0
+}

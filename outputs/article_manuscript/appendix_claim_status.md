@@ -1,0 +1,17 @@
+# ?????????? B. ?????? ???????????
+
+???? ????????? ?????? ??????? ??????? ???????????, ?????????????? ??? ????????????? ???????????.
+
+| ??????????? | ?????? | ???????? ????-???????? | ???????? ????? | ???????? | ????????????? ???????????? |
+|---|---|---|---|---|---|
+| Didactic collapse is measurable | supported | collapse_evidence_pure_by_seed_generation.csv | Pure branch has non-trivial shifts in pedagogy/silent/parse metrics across generations. | Direction is not strictly monotonic across all seeds/families. | Didactic quality drift is measurable in inference recycling trajectories. |
+| Pure recycling shows monotonic collapse | not_supported | collapse_evidence_pure_deltas.csv | Mixed signs for Gen0->Gen2 deltas by family/seed. | No robust monotonic deterioration in DBR-only wave. | Pure recycling shows instability and defect risk, not strict monotonic collapse. |
+| Pure recycling shows defect risk | supported | collapse_evidence_pure_by_seed_generation.csv | Silent/parse/low-reasoning rates remain non-zero across generations. | Magnitude varies by seed. | Pure recycling retains persistent defect burden. |
+| DBR preserves coverage | supported | dbr_selection_rate.csv | Mean selection_rate=0.971 | Coverage can dip when budgets tighten. | DBR maintains high effective coverage under explicit budgets. |
+| DBR eliminates parse failures | supported | dbr_defect_before_after.csv | Parse-failure after-rate is ~0 across DBR contexts. | Depends on parse budget set to zero. | DBR reliably suppresses parse-failure propagation. |
+| DBR improves accuracy | mixed | dbr_gen2_summary.csv | Gen2 delta accuracy mean=0.0333 | Seed-sensitive with wide CI. | Accuracy impact is mixed with slight positive tendency in some families. |
+| DBR improves pedagogy | mixed | dbr_gen2_summary.csv | Gen2 delta pedagogy mean=0.0200 | Not consistently positive in all seeds. | Pedagogical gains are plausible but not yet robust. |
+| DBR reduces silent errors | mixed | dbr_gen2_summary.csv | Gen2 delta silent mean=0.0267 | Direction favorable in aggregate but CI remains wide. | DBR tends to reduce silent errors with seed-dependent effect size. |
+| Qwen supports DBR | partially_supported | qwen_dbr_pairwise_summary.csv | Pairwise margin=0.1282 | Per-seed margins are mixed. | Qwen pairwise sensitivity gives partial support to DBR direction. |
+| CSR shows contrastive pedagogical signal | supported | csr_pair_summary_combined.csv | Pair construction rates >0.4 and large best-worst quality gaps. | Single-seed shakedown only. | CSR establishes a usable internal contrastive signal. |
+| CSR is branch-level superior | not_supported | csr_gen2_branch_comparison.csv | CSR does not consistently beat DBR on Gen2 pedagogy/accuracy. | Pair-construction bottleneck (best_not_correct) remains high. | CSR is promising diagnostically but not yet the top branch-level method. |

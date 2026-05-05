@@ -1,0 +1,13 @@
+seed,branch,generation,judge_total,judge_completed,judge_failed,judge_failures_rows,eval_rows
+211,pure_recycling,0,50,50,0,0,50
+211,pure_recycling,1,50,50,0,0,50
+211,pure_recycling,2,50,50,0,0,50
+211,dbr_medium,0,50,50,0,0,50
+211,dbr_medium,1,50,50,0,0,50
+211,dbr_medium,2,50,50,0,0,50
+212,pure_recycling,0,50,50,0,0,50
+212,pure_recycling,1,50,50,0,0,50
+212,pure_recycling,2,50,48,2,2,48
+212,dbr_medium,0,50,50,0,0,50
+212,dbr_medium,1,50,50,0,0,50
+212,dbr_medium,2,50,50,0,0,50

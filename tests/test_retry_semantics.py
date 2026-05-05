@@ -50,6 +50,8 @@ def test_cerebras_retries_on_429_with_sleep(monkeypatch: pytest.MonkeyPatch) -> 
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=120,
         max_retries=2,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     calls = {"count": 0}
     slept: list[float] = []
@@ -101,6 +103,8 @@ def test_cerebras_validation_errors_are_not_retried(monkeypatch: pytest.MonkeyPa
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=120,
         max_retries=3,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     calls = {"count": 0}
 
@@ -138,6 +142,8 @@ def test_cerebras_non_json_triggers_single_format_repair_attempt(
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=120,
         max_retries=3,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     calls = {"count": 0}
 
@@ -180,6 +186,8 @@ def test_cerebras_irreparable_non_json_fails_without_retry_storm(
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=120,
         max_retries=3,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     calls = {"count": 0}
     slept: list[float] = []
@@ -211,6 +219,8 @@ def test_cerebras_timeout_config_propagates(monkeypatch: pytest.MonkeyPatch) -> 
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=150,
         max_retries=3,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     assert float(client._http.timeout.read) == 150.0
 
@@ -223,6 +233,8 @@ def test_cerebras_payload_keeps_json_response_format(monkeypatch: pytest.MonkeyP
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=120,
         max_retries=1,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     seen_payloads: list[dict] = []
 
@@ -261,6 +273,8 @@ def test_cerebras_repair_path_handles_malformed_long_comment(
         api_key_env="CEREBRAS_API_KEY",
         timeout_sec=120,
         max_retries=1,
+        cache_enabled=False,
+        min_request_interval_sec=0.0,
     )
     calls = {"count": 0}
 

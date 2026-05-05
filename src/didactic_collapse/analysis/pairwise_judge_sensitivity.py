@@ -5,6 +5,7 @@ import logging
 import math
 import random
 import re
+import hashlib
 import time
 import zipfile
 from xml.sax.saxutils import escape
@@ -628,6 +629,14 @@ def _build_pairwise_repair_prompt(*, previous_response: str) -> str:
     )
 
 
+def _pairwise_payload_cache_key_payload(*, payload: dict[str, Any]) -> dict[str, Any]:
+    canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    return {
+        "payload_hash": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "payload_len": len(canonical),
+    }
+
+
 def run_pairwise_judge_for_model(
     *,
     selected_pairs_df: pd.DataFrame,
@@ -648,6 +657,14 @@ def run_pairwise_judge_for_model(
         api_key_env=cfg.judge.api_key_env,
         timeout_sec=cfg.judge.timeout_sec,
         max_retries=cfg.judge.max_retries,
+        max_completion_tokens=cfg.judge.max_completion_tokens,
+        comment_max_chars=cfg.judge.comment_max_chars,
+        cache_enabled=cfg.judge.cache_enabled,
+        cache_path=cfg.judge.cache_path,
+        min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+        max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+        max_429_retries=cfg.judge.cerebras_max_429_retries,
+        jitter_sec=cfg.judge.cerebras_jitter_sec,
     )
     request_delay_sec = max(0.0, float(cfg.judge.request_delay_sec))
     max_attempts = max(1, int(cfg.judge.max_retries) + 1)
@@ -672,6 +689,7 @@ def run_pairwise_judge_for_model(
             ],
             "temperature": 0,
             "top_p": 1,
+            "max_completion_tokens": int(cfg.judge.max_completion_tokens),
             "response_format": {"type": "json_object"},
         }
 
@@ -679,7 +697,12 @@ def run_pairwise_judge_for_model(
         raw_content = ""
         while True:
             try:
-                raw_content = client._request_raw_content(payload=payload)  # noqa: SLF001
+                raw_content = client._request_raw_content(  # noqa: SLF001
+                    payload=payload,
+                    call_type="pairwise_preference",
+                    raw_cache_key_payload=_pairwise_payload_cache_key_payload(payload=payload),
+                    enable_raw_cache=True,
+                )
                 parsed = parse_pairwise_judge_response(raw_content)
                 results.append(
                     {
@@ -705,7 +728,12 @@ def run_pairwise_judge_for_model(
                         {"role": "system", "content": _PAIRWISE_SYSTEM_PROMPT},
                         {"role": "user", "content": _build_pairwise_repair_prompt(previous_response=raw_content)},
                     ]
-                    repair_raw = client._request_raw_content(payload=repair_payload)  # noqa: SLF001
+                    repair_raw = client._request_raw_content(  # noqa: SLF001
+                        payload=repair_payload,
+                        call_type="pairwise_preference_repair",
+                        raw_cache_key_payload=_pairwise_payload_cache_key_payload(payload=repair_payload),
+                        enable_raw_cache=True,
+                    )
                     parsed = parse_pairwise_judge_response(repair_raw)
                     actions = list(parsed.repair_actions)
                     actions.append("repair_reemit_attempt")
@@ -743,7 +771,7 @@ def run_pairwise_judge_for_model(
                     time.sleep(request_delay_sec)
                 break
             except Exception as exc:  # noqa: BLE001
-                category, retryable, retry_after = _classify_openai_compatible_exception(exc)
+                category, retryable, retry_after, _ = _classify_openai_compatible_exception(exc)
                 if (not retryable) or attempt >= max_attempts:
                     failures.append(
                         {

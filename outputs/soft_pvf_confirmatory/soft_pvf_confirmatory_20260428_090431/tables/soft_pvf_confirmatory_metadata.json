@@ -1,0 +1,10 @@
+{
+  "evaluation_mode": "inference_recycling_only",
+  "run_count": 3,
+  "run_dirs": [
+    "outputs\\runs\\soft_pvf_confirmatory_seed141_20260427_223238",
+    "outputs\\runs\\soft_pvf_confirmatory_seed142_20260427_225409",
+    "outputs\\runs\\soft_pvf_confirmatory_seed143_20260427_231611"
+  ],
+  "notes": "Soft PVF confirmatory multi-seed analysis (inference_recycling_only)."
+}

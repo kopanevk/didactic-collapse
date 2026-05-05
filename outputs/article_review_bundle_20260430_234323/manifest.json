@@ -1,0 +1,110 @@
+{
+  "bundle_dir": "outputs\\article_review_bundle_20260430_234323",
+  "generated_at": "2026-04-30T23:43:29.931902",
+  "sources": [
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+      "timestamp": "2026-04-28T23:07:08.264438",
+      "reason_included": "DBR confirmatory family (211-213)",
+      "caveats": "includes soft_pvf_noisy_keep baseline"
+    },
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\dbr_confirmatory_seed212_20260428_230709",
+      "timestamp": "2026-04-30T11:50:11.819677",
+      "reason_included": "DBR confirmatory family (211-213)",
+      "caveats": "includes soft_pvf_noisy_keep baseline"
+    },
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\dbr_confirmatory_seed213_20260430_115105",
+      "timestamp": "2026-04-30T12:20:57.239274",
+      "reason_included": "DBR confirmatory family (211-213)",
+      "caveats": "includes soft_pvf_noisy_keep baseline"
+    },
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\dbr_only_confirmatory_seed221_20260430_144427",
+      "timestamp": "2026-04-30T15:21:12.612549",
+      "reason_included": "DBR-only confirmatory family (221-223)",
+      "caveats": "strict pure vs dbr family"
+    },
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\dbr_only_confirmatory_seed222_20260430_152134",
+      "timestamp": "2026-04-30T15:59:31.295434",
+      "reason_included": "DBR-only confirmatory family (221-223)",
+      "caveats": "strict pure vs dbr family"
+    },
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\dbr_only_confirmatory_seed223_20260430_160138",
+      "timestamp": "2026-04-30T21:11:03.888581",
+      "reason_included": "DBR-only confirmatory family (221-223)",
+      "caveats": "strict pure vs dbr family"
+    },
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\csr_shakedown_20260430_215711",
+      "timestamp": "2026-04-30T22:38:35.616947",
+      "reason_included": "CSR shakedown k=3",
+      "caveats": "single-seed shakedown"
+    },
+    {
+      "source_type": "run_dir",
+      "path": "outputs\\runs\\csr_shakedown_k5_20260430_224313",
+      "timestamp": "2026-04-30T23:21:10.546498",
+      "reason_included": "CSR shakedown k=5",
+      "caveats": "single-seed tuning shakedown"
+    },
+    {
+      "source_type": "analysis_dir",
+      "path": "outputs\\judge_sensitivity\\qwen_dbr_pairwise_20260430_135902",
+      "timestamp": "2026-04-30T13:59:02.571002",
+      "reason_included": "Qwen DBR pairwise sensitivity",
+      "caveats": "pairwise sample size limited"
+    },
+    {
+      "source_type": "analysis_dir",
+      "path": "outputs\\audits\\dbr_recompute_audit_20260430_132710",
+      "timestamp": "2026-04-30T13:27:12.030456",
+      "reason_included": "DBR recompute audit",
+      "caveats": "used for recompute-integrity confirmation"
+    },
+    {
+      "source_type": "analysis_dir",
+      "path": "outputs\\audits\\artifact_integrity_20260430_144015",
+      "timestamp": "2026-04-30T14:40:15.762141",
+      "reason_included": "Global artifact integrity audit",
+      "caveats": "contains legacy CRITICAL mismatches in seed211/gen0 summary"
+    },
+    {
+      "source_type": "analysis_dir",
+      "path": "outputs\\dbr_confirmatory\\dbr_article_evidence_20260430_144004",
+      "timestamp": "2026-04-30T14:40:04.589360",
+      "reason_included": "DBR article evidence outputs",
+      "caveats": "includes manual audit template"
+    },
+    {
+      "source_type": "analysis_dir",
+      "path": "outputs\\dbr_confirmatory\\dbr_only_confirmatory_3seed_20260430_221500",
+      "timestamp": "2026-04-30T21:18:03.820080",
+      "reason_included": "DBR-only 3-seed analysis",
+      "caveats": "primary dbr-only summary tables"
+    }
+  ],
+  "tables_dir": "outputs\\article_review_bundle_20260430_234323\\tables",
+  "figures_dir": "outputs\\article_review_bundle_20260430_234323\\figures",
+  "reports_dir": "outputs\\article_review_bundle_20260430_234323\\reports",
+  "checks": {
+    "all_manifest_paths_exist": true,
+    "all_csv_readable": true,
+    "claim_status_table_filled": true
+  },
+  "no_new_execution": {
+    "new_experiments": false,
+    "new_judge_calls": false,
+    "new_api_calls": false
+  }
+}

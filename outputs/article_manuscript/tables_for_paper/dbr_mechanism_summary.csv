@@ -1,0 +1,3 @@
+family,parse_failure_after_mean,selection_rate_mean,silent_delta_mean,incorrect_delta_mean,low_reasoning_delta_mean,low_structure_delta_mean,caveats
+dbr_confirmatory_211_213,0.0,0.9755555555555557,-0.003044217687074845,-0.01139266817838247,-0.011262282690854115,-0.014780801209372653,Means over generations and seeds; budgets may be relaxed.
+dbr_only_221_223,0.0,0.9655555555555555,-0.008308586142697642,-0.015340706633009146,-0.007562616602323522,-0.006836009844606133,Means over generations and seeds; budgets may be relaxed.

@@ -1,0 +1,7 @@
+run_id,run_dir,seed,model_name,branch,generation,sample_count,accuracy_mean,pedagogical_score_mean,silent_error_rate,parse_failure_pred_count,sample_count_from_accuracy,parse_failure_pred_rate,accuracy_source,evaluation_mode
+dbr_only_confirmatory_seed222_20260430_152134,outputs\runs\dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,dbr_medium,0.0,100,0.35,4.73,0.27,3,100,0.03,raw_summary,inference_recycling_only
+dbr_only_confirmatory_seed222_20260430_152134,outputs\runs\dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,dbr_medium,1.0,100,0.36,4.77,0.22,1,100,0.01,raw_summary,inference_recycling_only
+dbr_only_confirmatory_seed222_20260430_152134,outputs\runs\dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,dbr_medium,2.0,100,0.37,4.49,0.24,2,100,0.02,raw_summary,inference_recycling_only
+dbr_only_confirmatory_seed222_20260430_152134,outputs\runs\dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,pure_recycling,0.0,100,0.44,4.67,0.26,2,100,0.02,raw_summary,inference_recycling_only
+dbr_only_confirmatory_seed222_20260430_152134,outputs\runs\dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,pure_recycling,1.0,100,0.4,4.62,0.31,3,100,0.03,raw_summary,inference_recycling_only
+dbr_only_confirmatory_seed222_20260430_152134,outputs\runs\dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,pure_recycling,2.0,100,0.36,4.87,0.23,3,100,0.03,raw_summary,inference_recycling_only

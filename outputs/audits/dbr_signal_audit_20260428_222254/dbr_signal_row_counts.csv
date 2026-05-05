@@ -1,0 +1,7 @@
+branch,generation,model_outputs_rows,answer_extraction_rows,accuracy_rows,judge_rows,judge_failures_rows,eval_merged_rows,synthetic_base_rows,synthetic_train_next_rows,judge_partial_rows,generation_partial_rows,summary_sample_count
+pure_recycling,0,50,50,50,50,0,50,50,50,50,50,50
+pure_recycling,1,50,50,50,50,0,50,50,50,50,50,50
+pure_recycling,2,50,50,50,50,0,50,50,50,50,50,50
+dbr_medium,0,50,50,50,50,0,50,50,50,50,50,50
+dbr_medium,1,50,50,50,50,0,50,50,49,50,50,50
+dbr_medium,2,50,50,50,50,0,50,50,49,50,50,50

@@ -1,0 +1,10 @@
+run_id,run_dir,seed,model_name,branch,generation,sample_count,accuracy_mean,pedagogical_score_mean,silent_error_rate,parse_failure_pred_count,sample_count_from_accuracy,parse_failure_pred_rate,accuracy_source,evaluation_mode
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,dbr_medium,0.0,50,0.32,4.78,0.28,1,50,0.02,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,dbr_medium,1.0,50,0.42,4.92,0.32,1,50,0.02,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,dbr_medium,2.0,50,0.4,4.7,0.22,1,50,0.02,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,pure_recycling,0.0,50,0.32,4.82,0.26,1,50,0.02,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,pure_recycling,1.0,50,0.3,4.3,0.36,1,50,0.02,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,pure_recycling,2.0,48,0.3125,5.041666666666667,0.2708333333333333,2,50,0.04,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,soft_pvf_noisy_keep,0.0,48,0.4791666666666667,5.020833333333333,0.1666666666666666,0,50,0.0,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,soft_pvf_noisy_keep,1.0,50,0.36,4.56,0.3,3,50,0.06,raw_summary,inference_recycling_only
+dbr_confirmatory_seed212_20260428_230709,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,soft_pvf_noisy_keep,2.0,50,0.38,4.86,0.34,1,50,0.02,raw_summary,inference_recycling_only

@@ -1,0 +1,8 @@
+{
+  "created_at": "2026-04-28T21:33:13.997970",
+  "mode": "first_real_experiment",
+  "sample_size_requested": 50,
+  "sample_size_used": 50,
+  "seed": 181,
+  "source_split_dir": "data\\splits"
+}

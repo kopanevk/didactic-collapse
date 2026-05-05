@@ -1,0 +1,15 @@
+csr_variant,generation,no_pair_reason,count
+k3,0,best_not_correct,14
+k3,0,quality_gap_below_threshold,3
+k3,1,best_not_correct,12
+k3,1,quality_gap_below_threshold,2
+k3,2,best_not_correct,11
+k3,2,quality_gap_below_threshold,2
+k5,0,best_not_correct,10
+k5,0,best_silent_error,2
+k5,0,quality_gap_below_threshold,2
+k5,1,best_not_correct,8
+k5,1,best_silent_error,1
+k5,1,quality_gap_below_threshold,1
+k5,2,best_not_correct,11
+k5,2,quality_gap_below_threshold,2

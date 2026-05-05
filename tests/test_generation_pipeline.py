@@ -29,6 +29,18 @@ class _FlakyClient:
         return "Reasoning here.\nFinal answer: 1"
 
 
+class _RecoveringClient:
+    def __init__(self, *, fail_token: str) -> None:
+        self.fail_token = fail_token
+        self.failed_once = False
+
+    def generate(self, *, model_name: str, prompt: str, temperature: float, top_p: float, max_tokens: int) -> str:
+        if self.fail_token in prompt and not self.failed_once:
+            self.failed_once = True
+            raise RuntimeError("transient generation failure")
+        return "Reasoning here.\nFinal answer: 1"
+
+
 def test_generation_fails_on_missing_required_columns() -> None:
     examples = pd.DataFrame([{"example_id": "ex1"}])
     with pytest.raises(ValueError, match="missing required columns"):
@@ -183,3 +195,67 @@ def test_generation_continues_on_single_row_failure_under_threshold() -> None:
     failures_df = pd.read_parquet(base_dir / "generation_failures.parquet")
     assert len(failures_df) == 1
     assert failures_df.loc[0, "example_id"] == "ex2"
+
+
+def test_generation_resume_retries_previous_failed_rows_and_clears_failures() -> None:
+    examples = pd.DataFrame(
+        [
+            {"example_id": "ex1", "question": "ok_case"},
+            {"example_id": "ex2", "question": "transient_case"},
+        ]
+    )
+    base_dir = _mk_base_dir("generation_retry_failed_rows")
+    out_path = base_dir / "model_outputs.parquet"
+    partial_path = base_dir / "generation_partial.parquet"
+    failures_path = base_dir / "generation_failures.parquet"
+    metadata_path = base_dir / "generation_progress.json"
+
+    first_client = _RecoveringClient(fail_token="transient_case")
+    first = run_generation(
+        client=first_client,
+        examples_df=examples,
+        model_name="qwen2.5:0.5b",
+        branch="pure_recycling",
+        generation=0,
+        run_id="run",
+        prompt_version="v2_strict_final",
+        temperature=0.0,
+        top_p=1.0,
+        max_tokens=64,
+        out_path=out_path,
+        partial_path=partial_path,
+        failures_path=failures_path,
+        metadata_path=metadata_path,
+        partial_save_every_n=1,
+        max_row_failures=2,
+        continue_on_row_error=True,
+    )
+    assert len(first) == 1
+    first_failures = pd.read_parquet(failures_path)
+    assert len(first_failures) == 1
+    assert set(first_failures["example_id"].tolist()) == {"ex2"}
+
+    second_client = _RecoveringClient(fail_token="never")
+    second = run_generation(
+        client=second_client,
+        examples_df=examples,
+        model_name="qwen2.5:0.5b",
+        branch="pure_recycling",
+        generation=0,
+        run_id="run",
+        prompt_version="v2_strict_final",
+        temperature=0.0,
+        top_p=1.0,
+        max_tokens=64,
+        out_path=out_path,
+        partial_path=partial_path,
+        failures_path=failures_path,
+        metadata_path=metadata_path,
+        partial_save_every_n=1,
+        max_row_failures=2,
+        continue_on_row_error=True,
+    )
+    assert len(second) == 2
+    assert set(second["example_id"].tolist()) == {"ex1", "ex2"}
+    second_failures = pd.read_parquet(failures_path)
+    assert len(second_failures) == 0

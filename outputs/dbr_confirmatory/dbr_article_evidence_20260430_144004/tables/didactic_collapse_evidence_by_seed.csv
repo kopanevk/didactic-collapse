@@ -1,0 +1,10 @@
+run_id,run_dir,seed,branch,generation,sample_count,accuracy_mean,pedagogical_score_mean,silent_error_rate,parse_failure_pred_rate,low_reasoning_rate,low_structure_rate,defect_severity_mean
+dbr_confirmatory_seed211_20260428_222918,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed211_20260428_222918,211,pure_recycling,0,50.0,0.34,4.38,0.32,0.06,0.58,0.4,4.4
+dbr_confirmatory_seed211_20260428_222918,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed211_20260428_222918,211,pure_recycling,1,50.0,0.44,4.82,0.2,0.04,0.48,0.36,3.4
+dbr_confirmatory_seed211_20260428_222918,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed211_20260428_222918,211,pure_recycling,2,50.0,0.52,5.14,0.3,0.02,0.42,0.34,3.42
+dbr_confirmatory_seed212_20260428_230709,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,pure_recycling,0,50.0,0.32,4.82,0.26,0.02,0.5,0.36,3.84
+dbr_confirmatory_seed212_20260428_230709,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,pure_recycling,1,50.0,0.3,4.3,0.36,0.02,0.62,0.4,4.56
+dbr_confirmatory_seed212_20260428_230709,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,pure_recycling,2,48.0,0.3125,5.041666666666667,0.2708333333333333,0.020833333333333332,0.5208333333333334,0.3125,3.8958333333333335
+dbr_confirmatory_seed213_20260430_115105,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed213_20260430_115105,213,pure_recycling,0,50.0,0.48,4.42,0.26,0.06,0.48,0.44,3.72
+dbr_confirmatory_seed213_20260430_115105,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed213_20260430_115105,213,pure_recycling,1,50.0,0.46,5.48,0.24,0.06,0.42,0.28,3.4
+dbr_confirmatory_seed213_20260430_115105,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed213_20260430_115105,213,pure_recycling,2,50.0,0.42,4.48,0.3,0.06,0.52,0.4,4.04

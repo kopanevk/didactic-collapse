@@ -3,6 +3,7 @@
 import hashlib
 import json
 import logging
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -23,9 +24,9 @@ from didactic_collapse.clients.judge_client import (
 )
 from didactic_collapse.clients.ollama_client import OllamaClient
 from didactic_collapse.config.settings import AppConfig
-from didactic_collapse.judging.accuracy import evaluate_accuracy
+from didactic_collapse.judging.accuracy import evaluate_accuracy, score_prediction
 from didactic_collapse.pipeline.extract_answer import extract_final_answer_result
-from didactic_collapse.pipeline.generate_outputs import run_generation
+from didactic_collapse.pipeline.generate_outputs import build_generation_prompt, run_generation
 from didactic_collapse.pipeline.judge_outputs import run_judging
 from didactic_collapse.prompts.prompt_registry import load_judge_prompt
 from didactic_collapse.recycling.anchoring import (
@@ -36,8 +37,33 @@ from didactic_collapse.recycling.anchoring import (
 )
 from didactic_collapse.recycling.pedagogical_verification_filter import (
     PVFPolicy,
+    SoftPVFPolicy,
     apply_pedagogical_verification_filter,
+    apply_soft_pvf,
     save_pvf_artifacts,
+    save_soft_pvf_artifacts,
+)
+from didactic_collapse.recycling.defect_budgeted_recycling import (
+    DBRPolicy,
+    apply_dbr,
+    save_dbr_artifacts,
+)
+from didactic_collapse.recycling.contrastive_self_recycling import (
+    CSRPolicy,
+    apply_csr,
+    save_csr_artifacts,
+)
+from didactic_collapse.recycling.pedagogical_verification_repair import (
+    CerebrasRepairClient,
+    PVRPolicy,
+    apply_pvr,
+    save_pvr_artifacts,
+)
+from didactic_collapse.recycling.pedagogical_improvement_recycling import (
+    CerebrasPAIRLiteRepairClient,
+    PAIRLitePolicy,
+    apply_pair_lite,
+    save_pair_lite_artifacts,
 )
 from didactic_collapse.utils.io_utils import save_tabular
 
@@ -185,6 +211,8 @@ class ExperimentRunner:
         self._stage_executors = stage_executors or {}
         self._gen_client: OllamaClient | None = None
         self._judge_client: JudgeClient | None = None
+        self._pvr_repair_client: CerebrasRepairClient | None = None
+        self._pair_lite_repair_client: CerebrasPAIRLiteRepairClient | None = None
         self._judge_prompt: str | None = None
         self._heldout_df: pd.DataFrame | None = None
         self._anchor_pool_df: pd.DataFrame | None = None
@@ -218,6 +246,14 @@ class ExperimentRunner:
                     api_key_env=self.cfg.judge.api_key_env,
                     timeout_sec=self.cfg.judge.timeout_sec,
                     max_retries=self.cfg.judge.max_retries,
+                    max_completion_tokens=self.cfg.judge.max_completion_tokens,
+                    comment_max_chars=self.cfg.judge.comment_max_chars,
+                    cache_enabled=self.cfg.judge.cache_enabled,
+                    cache_path=self.cfg.judge.cache_path,
+                    min_request_interval_sec=self.cfg.judge.cerebras_min_request_interval_sec,
+                    max_retry_after_sec=self.cfg.judge.cerebras_max_retry_after_sec,
+                    max_429_retries=self.cfg.judge.cerebras_max_429_retries,
+                    jitter_sec=self.cfg.judge.cerebras_jitter_sec,
                 )
             elif provider in {"gemini", "gemini_sdk", "gemini_openai_compatible"}:
                 # Even for legacy provider names, use official Gemini SDK auth path only.
@@ -234,6 +270,56 @@ class ExperimentRunner:
                     max_retries=self.cfg.judge.max_retries,
                 )
         return self._judge_client
+
+    def _get_pvr_repair_client(self) -> CerebrasRepairClient:
+        if self._pvr_repair_client is None:
+            provider = (self.cfg.repair.provider or self.cfg.judge.provider).strip().lower()
+            if provider != "cerebras":
+                raise OrchestrationError(
+                    f"PVR repair currently supports provider=cerebras only, got: {provider}"
+                )
+
+            model_name = (self.cfg.repair.model_name or self.cfg.judge.model_name).strip()
+            base_url = (self.cfg.repair.base_url or self.cfg.judge.base_url).strip()
+            api_key_env = (self.cfg.repair.api_key_env or self.cfg.judge.api_key_env).strip()
+
+            self._pvr_repair_client = CerebrasRepairClient(
+                base_url=base_url,
+                model_name=model_name,
+                api_key_env=api_key_env,
+                timeout_sec=self.cfg.repair.timeout_sec,
+                max_retries=self.cfg.repair.max_retries,
+                request_delay_sec=self.cfg.repair.request_delay_sec,
+                temperature=self.cfg.repair.temperature,
+                top_p=self.cfg.repair.top_p,
+                max_tokens=self.cfg.repair.max_tokens,
+            )
+        return self._pvr_repair_client
+
+    def _get_pair_lite_repair_client(self) -> CerebrasPAIRLiteRepairClient:
+        if self._pair_lite_repair_client is None:
+            provider = (self.cfg.repair.provider or self.cfg.judge.provider).strip().lower()
+            if provider != "cerebras":
+                raise OrchestrationError(
+                    f"PAIR-lite repair currently supports provider=cerebras only, got: {provider}"
+                )
+
+            model_name = (self.cfg.repair.model_name or self.cfg.judge.model_name).strip()
+            base_url = (self.cfg.repair.base_url or self.cfg.judge.base_url).strip()
+            api_key_env = (self.cfg.repair.api_key_env or self.cfg.judge.api_key_env).strip()
+
+            self._pair_lite_repair_client = CerebrasPAIRLiteRepairClient(
+                base_url=base_url,
+                model_name=model_name,
+                api_key_env=api_key_env,
+                timeout_sec=self.cfg.repair.timeout_sec,
+                max_retries=self.cfg.repair.max_retries,
+                request_delay_sec=self.cfg.repair.request_delay_sec,
+                temperature=self.cfg.repair.temperature,
+                top_p=self.cfg.repair.top_p,
+                max_tokens=self.cfg.repair.max_tokens,
+            )
+        return self._pair_lite_repair_client
 
     def _get_judge_prompt(self) -> str:
         if self._judge_prompt is None:
@@ -256,6 +342,7 @@ class ExperimentRunner:
     def _context_artifacts(self, step_dir: Path) -> dict[str, Path]:
         return {
             "model_outputs": step_dir / "model_outputs.parquet",
+            "csr_candidates": step_dir / "csr_candidates.parquet",
             "generation_partial": step_dir / "generation_partial.parquet",
             "generation_failures": step_dir / "generation_failures.parquet",
             "generation_metadata": step_dir / "generation_progress.json",
@@ -265,12 +352,31 @@ class ExperimentRunner:
             "judge_partial": step_dir / "judge_partial.parquet",
             "judge_failures": step_dir / "judge_failures.parquet",
             "judge_metadata": step_dir / "judge_progress.json",
+            "judge_dedupe_map": step_dir / "judge_dedupe_map.parquet",
             "eval_merged": step_dir / "eval_merged.parquet",
             "synthetic_base": step_dir / "synthetic_base.parquet",
             "synthetic_train_next": step_dir / "synthetic_train_next.parquet",
             "pvf_filtered_training": step_dir / "filtered_training_dataset.parquet",
             "pvf_rejected_examples": step_dir / "rejected_examples.parquet",
             "pvf_report": step_dir / "pvf_filter_report.json",
+            "soft_pvf_training": step_dir / "soft_pvf_training_dataset.parquet",
+            "soft_pvf_decisions": step_dir / "soft_pvf_decisions.parquet",
+            "soft_pvf_report": step_dir / "soft_pvf_report.json",
+            "pvr_training": step_dir / "pvr_training_dataset.parquet",
+            "pvr_decisions": step_dir / "pvr_decisions.parquet",
+            "pvr_repair_pairs": step_dir / "pvr_repair_pairs.parquet",
+            "pvr_report": step_dir / "pvr_report.json",
+            "pair_lite_training": step_dir / "pair_lite_training_dataset.parquet",
+            "pair_lite_decisions": step_dir / "pair_lite_decisions.parquet",
+            "pair_lite_repair_pairs": step_dir / "pair_lite_repair_pairs.parquet",
+            "pair_lite_report": step_dir / "pair_lite_report.json",
+            "dbr_training": step_dir / "dbr_training_dataset.parquet",
+            "dbr_decisions": step_dir / "dbr_decisions.parquet",
+            "dbr_report": step_dir / "dbr_budget_report.json",
+            "csr_candidate_scores": step_dir / "csr_candidate_scores.parquet",
+            "csr_pairs": step_dir / "csr_pairs.parquet",
+            "csr_training": step_dir / "csr_training_dataset.parquet",
+            "csr_report": step_dir / "csr_report.json",
             "anchor_metadata": step_dir / "anchor_selection_manifest.json",
             "used_anchor_ids": step_dir / "used_anchor_ids.json",
             "anchor_quality_diagnostics": step_dir / "anchor_quality_diagnostics.parquet",
@@ -327,6 +433,20 @@ class ExperimentRunner:
                 artifacts["pvf_filtered_training"],
                 artifacts["pvf_rejected_examples"],
                 artifacts["pvf_report"],
+                artifacts["soft_pvf_training"],
+                artifacts["soft_pvf_decisions"],
+                artifacts["soft_pvf_report"],
+                artifacts["pvr_training"],
+                artifacts["pvr_decisions"],
+                artifacts["pvr_repair_pairs"],
+                artifacts["pvr_report"],
+                artifacts["pair_lite_training"],
+                artifacts["pair_lite_decisions"],
+                artifacts["pair_lite_repair_pairs"],
+                artifacts["pair_lite_report"],
+                artifacts["dbr_training"],
+                artifacts["dbr_decisions"],
+                artifacts["dbr_report"],
             ]
         if stage_name == "aggregate":
             return [artifacts["all_eval_merged_parquet"], artifacts["metrics_csv"]]
@@ -519,6 +639,10 @@ class ExperimentRunner:
             return False
         if "rejected_examples" in path.name:
             return False
+        if path.name == "pvr_repair_pairs.parquet":
+            return False
+        if path.name == "pair_lite_repair_pairs.parquet":
+            return False
         return True
 
     def _artifact_is_optional(self, path: Path) -> bool:
@@ -534,6 +658,25 @@ class ExperimentRunner:
             "filtered_training_dataset.parquet",
             "rejected_examples.parquet",
             "pvf_filter_report.json",
+            "soft_pvf_training_dataset.parquet",
+            "soft_pvf_decisions.parquet",
+            "soft_pvf_report.json",
+            "pvr_training_dataset.parquet",
+            "pvr_decisions.parquet",
+            "pvr_repair_pairs.parquet",
+            "pvr_report.json",
+            "pair_lite_training_dataset.parquet",
+            "pair_lite_decisions.parquet",
+            "pair_lite_repair_pairs.parquet",
+            "pair_lite_report.json",
+            "dbr_training_dataset.parquet",
+            "dbr_decisions.parquet",
+            "dbr_budget_report.json",
+            "csr_candidates.parquet",
+            "csr_candidate_scores.parquet",
+            "csr_pairs.parquet",
+            "csr_training_dataset.parquet",
+            "csr_report.json",
         }
         return path.name in optional_names
 
@@ -558,6 +701,28 @@ class ExperimentRunner:
                 f"Partial artifacts detected for incomplete stage '{stage_name}': "
                 + ", ".join(str(p) for p in existing)
             )
+
+    def _stage_allows_stale_output_cleanup(self, stage_name: StageName) -> bool:
+        # These stages can be safely rerun from their declared inputs; stale outputs
+        # after interruption should not block resume forever.
+        return stage_name in {"answer_extraction", "accuracy", "synthetic_build", "anchoring"}
+
+    def _cleanup_stale_outputs_for_rerun(self, stage_name: StageName, output_paths: list[Path]) -> None:
+        stale = [p for p in output_paths if p.exists()]
+        if not stale:
+            return
+        for path in stale:
+            if path.is_dir():
+                raise OrchestrationError(
+                    f"Unexpected directory output for stage '{stage_name}': {path}"
+                )
+            path.unlink()
+        logger.warning(
+            "stage_resume_removed_stale_outputs stage=%s removed_count=%d sample=%s",
+            stage_name,
+            len(stale),
+            ", ".join(str(p) for p in stale[:3]),
+        )
 
     def _load_previously_used_anchor_ids(self, *, model_name: str, branch: str, generation: int) -> set[str]:
         used_ids: set[str] = set()
@@ -584,11 +749,267 @@ class ExperimentRunner:
                 used_ids.add(item)
         return used_ids
 
+    def _get_branch_cfg(self, branch_name: str) -> Any:
+        branch_cfg = next((b for b in self.cfg.experiment.branches if b.name == branch_name), None)
+        if branch_cfg is None:
+            raise OrchestrationError(f"Unknown branch in config: {branch_name}")
+        return branch_cfg
+
+    def _build_csr_candidates_sidecar(
+        self,
+        *,
+        context: StageContext,
+        base_outputs_df: pd.DataFrame,
+        branch_cfg: Any,
+    ) -> pd.DataFrame:
+        if context.model_name is None or context.branch is None or context.generation is None:
+            raise OrchestrationError("Missing context fields for CSR candidate generation sidecar")
+        required = {"run_id", "branch", "generation", "model_name", "example_id", "raw_response"}
+        missing = required.difference(base_outputs_df.columns)
+        if missing:
+            raise OrchestrationError(
+                f"CSR candidates require model_outputs columns missing: {sorted(missing)}"
+            )
+
+        branch_type = self._resolve_branch_type(branch_cfg)
+        prompt_version = str(self.cfg.runtime.generation_prompt_version)
+        question_by_id = {
+            str(rec["example_id"]): str(rec["question"])
+            for rec in self._get_heldout()[["example_id", "question"]].to_dict(orient="records")
+        }
+
+        candidates: list[dict[str, Any]] = []
+        for rec in base_outputs_df.to_dict(orient="records"):
+            example_id = str(rec["example_id"])
+            question = question_by_id.get(example_id)
+            if question is None:
+                raise OrchestrationError(
+                    "CSR candidate sidecar could not map example_id to heldout question. "
+                    f"example_id={example_id}"
+                )
+            prompt = build_generation_prompt(question=question, prompt_version=prompt_version)
+            candidates.append(
+                {
+                    "run_id": rec["run_id"],
+                    "branch": rec["branch"],
+                    "generation": rec["generation"],
+                    "model_name": rec["model_name"],
+                    "example_id": example_id,
+                    "candidate_id": 0,
+                    "question": question,
+                    "prompt_version": prompt_version,
+                    "prompt_text": prompt,
+                    "raw_response": str(rec.get("raw_response", "")),
+                    "parsed_final_answer": rec.get("parsed_final_answer"),
+                    "candidate_temperature": float(self.cfg.sampling.temperature),
+                    "candidate_top_p": float(self.cfg.sampling.top_p),
+                    "candidate_max_tokens": int(self.cfg.sampling.max_tokens),
+                }
+            )
+
+        if branch_type != "csr_medium":
+            return pd.DataFrame(candidates).sort_values(["example_id", "candidate_id"]).reset_index(drop=True)
+
+        num_candidates = int(getattr(branch_cfg, "csr_num_candidates", 3))
+        candidate_temperature = float(getattr(branch_cfg, "csr_candidate_temperature", 0.7))
+        failure_count = 0
+
+        for candidate_id in range(1, num_candidates):
+            for rec in base_outputs_df.to_dict(orient="records"):
+                example_id = str(rec["example_id"])
+                question = question_by_id[example_id]
+                prompt = build_generation_prompt(question=question, prompt_version=prompt_version)
+                try:
+                    raw_response = self._get_gen_client().generate(
+                        model_name=context.model_name,
+                        prompt=prompt,
+                        temperature=candidate_temperature,
+                        top_p=float(self.cfg.sampling.top_p),
+                        max_tokens=int(self.cfg.sampling.max_tokens),
+                    )
+                    parsed = extract_final_answer_result(raw_response)
+                    candidates.append(
+                        {
+                            "run_id": rec["run_id"],
+                            "branch": rec["branch"],
+                            "generation": rec["generation"],
+                            "model_name": rec["model_name"],
+                            "example_id": example_id,
+                            "candidate_id": int(candidate_id),
+                            "question": question,
+                            "prompt_version": prompt_version,
+                            "prompt_text": prompt,
+                            "raw_response": raw_response,
+                            "parsed_final_answer": parsed.extracted_answer,
+                            "candidate_temperature": float(candidate_temperature),
+                            "candidate_top_p": float(self.cfg.sampling.top_p),
+                            "candidate_max_tokens": int(self.cfg.sampling.max_tokens),
+                        }
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    failure_count += 1
+                    logger.warning(
+                        "csr_candidate_generation_failed example_id=%s candidate_id=%d category=%s message=%s",
+                        example_id,
+                        int(candidate_id),
+                        exc.__class__.__name__,
+                        str(exc)[:280],
+                    )
+                    if not self.cfg.runtime.continue_on_row_error:
+                        raise OrchestrationError(
+                            "CSR candidate generation failed and continue_on_row_error=False. "
+                            f"example_id={example_id}, candidate_id={candidate_id}, error={exc}"
+                        ) from exc
+                    if failure_count > int(self.cfg.runtime.max_row_failures):
+                        raise OrchestrationError(
+                            "CSR candidate generation failure threshold exceeded. "
+                            f"failed={failure_count}, max_row_failures={self.cfg.runtime.max_row_failures}"
+                        ) from exc
+
+        out_df = pd.DataFrame(candidates)
+        if out_df.empty:
+            raise OrchestrationError("CSR candidate sidecar produced zero rows.")
+        return out_df.sort_values(["example_id", "candidate_id"]).reset_index(drop=True)
+
+    def _score_csr_candidates(
+        self,
+        *,
+        context: StageContext,
+        candidates_df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        if context.model_name is None or context.branch is None or context.generation is None:
+            raise OrchestrationError("Missing context fields for CSR candidate scoring")
+        required = {"example_id", "candidate_id", "question", "raw_response"}
+        missing = required.difference(candidates_df.columns)
+        if missing:
+            raise OrchestrationError(
+                f"CSR candidate scoring missing required columns: {sorted(missing)}"
+            )
+
+        heldout = self._get_heldout()[["example_id", "answer_gold"]].copy()
+        heldout["example_id"] = heldout["example_id"].astype(str)
+        merged = candidates_df.copy()
+        merged["example_id"] = merged["example_id"].astype(str)
+        merged = merged.merge(
+            heldout,
+            on="example_id",
+            how="left",
+            validate="many_to_one",
+        )
+        missing_gold = merged["answer_gold"].isna()
+        if missing_gold.any():
+            sample = merged.loc[missing_gold, "example_id"].astype(str).head(5).tolist()
+            raise OrchestrationError(
+                "CSR candidate scoring missing gold answers after merge. "
+                f"missing_count={int(missing_gold.sum())}, sample_example_ids={sample}"
+            )
+
+        prompt = self._get_judge_prompt()
+        provider = self.cfg.judge.provider
+        model = self.cfg.judge.model_name
+        request_delay = float(self.cfg.judge.request_delay_sec)
+        should_pace = request_delay > 0 and provider.strip().lower() not in {"mock", "stub", "mock_judge"}
+
+        scored_rows: list[dict[str, Any]] = []
+        failure_count = 0
+
+        merged["judge_input_key"] = merged.apply(
+            lambda r: hashlib.sha256(
+                json.dumps(
+                    {
+                        "q": str(r["question"]),
+                        "a": str(r["answer_gold"]),
+                        "o": str(r["raw_response"]),
+                        "rp": prompt,
+                        "p": provider,
+                        "m": model,
+                    },
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ).encode("utf-8")
+            ).hexdigest(),
+            axis=1,
+        )
+
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for rec in merged.to_dict(orient="records"):
+            grouped.setdefault(str(rec["judge_input_key"]), []).append(rec)
+
+        for idx, recs in enumerate(grouped.values(), start=1):
+            if should_pace and idx > 1:
+                time.sleep(request_delay)
+            first = recs[0]
+            raw_response = str(first["raw_response"])
+            extraction = extract_final_answer_result(raw_response)
+            accuracy = score_prediction(
+                model_output=raw_response,
+                gold_answer=str(first["answer_gold"]),
+                parsed_final_answer=extraction.extracted_answer,
+            )
+
+            try:
+                judge_score = self._get_judge_client().score(
+                    question=str(first["question"]),
+                    gold_answer=str(first["answer_gold"]),
+                    model_output=raw_response,
+                    rubric_prompt=prompt,
+                )
+            except Exception as exc:  # noqa: BLE001
+                failure_count += len(recs)
+                logger.warning(
+                    "csr_candidate_judge_failed example_id=%s candidate_id=%s grouped=%d category=%s message=%s",
+                    str(first.get("example_id")),
+                    str(first.get("candidate_id")),
+                    len(recs),
+                    exc.__class__.__name__,
+                    str(exc)[:280],
+                )
+                if not self.cfg.runtime.continue_on_row_error:
+                    raise OrchestrationError(
+                        "CSR candidate judge scoring failed and continue_on_row_error=False. "
+                        f"example_id={first.get('example_id')} candidate_id={first.get('candidate_id')}"
+                    ) from exc
+                if failure_count > int(self.cfg.runtime.max_row_failures):
+                    raise OrchestrationError(
+                        "CSR candidate judge scoring failure threshold exceeded. "
+                        f"failed={failure_count}, max_row_failures={self.cfg.runtime.max_row_failures}"
+                    ) from exc
+                continue
+
+            for rec in recs:
+                row = dict(rec)
+                row["parsed_final_answer"] = extraction.extracted_answer
+                row["normalized_predicted"] = accuracy.normalized_predicted
+                row["normalized_gold"] = accuracy.normalized_gold
+                row["pred_parse_success"] = accuracy.pred_parse_success
+                row["gold_parse_success"] = accuracy.gold_parse_success
+                row["accuracy_label"] = accuracy.accuracy_label
+                row["accuracy_parse_failure_reason"] = accuracy.parse_failure_reason
+                row["is_correct"] = accuracy.is_correct
+                row.update(judge_score)
+                scored_rows.append(row)
+
+        if not scored_rows:
+            raise OrchestrationError(
+                "CSR candidate scoring produced zero valid rows after judge failures."
+            )
+        return pd.DataFrame(scored_rows).sort_values(["example_id", "candidate_id"]).reset_index(drop=True)
+
     def _resolve_branch_type(self, branch_cfg: Any) -> str:
         declared = getattr(branch_cfg, "branch_type", None)
         if declared is not None:
             return str(declared)
         name = str(getattr(branch_cfg, "name", ""))
+        if name.startswith("soft_pvf_"):
+            return "soft_pvf_medium"
+        if name.startswith("dbr_"):
+            return "dbr_medium"
+        if name.startswith("pvr_"):
+            return "pvr_repair_medium"
+        if name.startswith("pair_lite_"):
+            return "pair_lite_medium"
+        if name.startswith("csr_"):
+            return "csr_medium"
         if name.startswith("pvf_"):
             return "pvf_medium"
         anchor_ratio = float(getattr(branch_cfg, "anchor_ratio", 0.0))
@@ -655,7 +1076,10 @@ class ExperimentRunner:
             and not force
             and not self._stage_supports_row_level_resume(stage_name)
         ):
-            self._assert_no_partial_outputs(stage_name, output_paths)
+            if self._stage_allows_stale_output_cleanup(stage_name):
+                self._cleanup_stale_outputs_for_rerun(stage_name, output_paths)
+            else:
+                self._assert_no_partial_outputs(stage_name, output_paths)
 
         for input_path in input_paths:
             _validate_readable_artifact(input_path, must_be_non_empty=True)
@@ -727,7 +1151,10 @@ class ExperimentRunner:
 
             if record.status in (StageStatus.PENDING, StageStatus.RUNNING, StageStatus.FAILED):
                 if not force and not self._stage_supports_row_level_resume(stage_name):
-                    self._assert_no_partial_outputs(stage_name, expected_outputs)
+                    if self._stage_allows_stale_output_cleanup(stage_name):
+                        self._cleanup_stale_outputs_for_rerun(stage_name, expected_outputs)
+                    else:
+                        self._assert_no_partial_outputs(stage_name, expected_outputs)
                 start_index = idx
                 break
 
@@ -786,6 +1213,13 @@ class ExperimentRunner:
                 max_row_failures=self.cfg.runtime.max_row_failures,
                 continue_on_row_error=self.cfg.runtime.continue_on_row_error,
             )
+            branch_cfg = self._get_branch_cfg(context.branch)
+            csr_candidates_df = self._build_csr_candidates_sidecar(
+                context=context,
+                base_outputs_df=out_df,
+                branch_cfg=branch_cfg,
+            )
+            csr_candidates_df.to_parquet(context.artifacts["csr_candidates"], index=False)
             return StageExecutionResult(row_count=int(len(out_df)))
 
         if stage_name == "answer_extraction":
@@ -829,6 +1263,7 @@ class ExperimentRunner:
                 partial_path=context.artifacts["judge_partial"],
                 failures_path=context.artifacts["judge_failures"],
                 metadata_path=context.artifacts["judge_metadata"],
+                dedupe_map_path=context.artifacts["judge_dedupe_map"],
                 partial_save_every_n=self.cfg.runtime.partial_save_every_n,
                 max_row_failures=self.cfg.runtime.max_row_failures,
                 continue_on_row_error=self.cfg.runtime.continue_on_row_error,
@@ -915,9 +1350,7 @@ class ExperimentRunner:
             accuracy_df = pd.read_parquet(context.artifacts["accuracy_table"])
             judge_df = pd.read_parquet(context.artifacts["judge_outputs"])
 
-            branch_cfg = next((b for b in self.cfg.experiment.branches if b.name == context.branch), None)
-            if branch_cfg is None:
-                raise OrchestrationError(f"Unknown branch in config: {context.branch}")
+            branch_cfg = self._get_branch_cfg(context.branch)
 
             branch_type = self._resolve_branch_type(branch_cfg)
 
@@ -968,6 +1401,325 @@ class ExperimentRunner:
                         context.artifacts["anchor_quality_diagnostics"], index=False
                     )
                 return StageExecutionResult(row_count=int(len(pvf_result.filtered_training_df)))
+
+            if branch_type == "soft_pvf_medium":
+                policy_name = str(getattr(branch_cfg, "soft_pvf_policy_name", "") or "").strip()
+                if not policy_name:
+                    policy_name = context.branch if str(context.branch).startswith("soft_pvf_") else "soft_pvf_medium"
+                soft_policy = SoftPVFPolicy(
+                    policy_name=policy_name,
+                    high_quality_threshold=int(getattr(branch_cfg, "soft_pvf_high_quality_threshold", 6)),
+                    medium_quality_threshold=int(getattr(branch_cfg, "soft_pvf_medium_quality_threshold", 4)),
+                    weight_high=float(getattr(branch_cfg, "soft_pvf_weight_high", 1.0)),
+                    weight_medium=float(getattr(branch_cfg, "soft_pvf_weight_medium", 0.5)),
+                    weight_low_correct=float(getattr(branch_cfg, "soft_pvf_weight_low_correct", 0.25)),
+                    weight_incorrect=float(getattr(branch_cfg, "soft_pvf_weight_incorrect", 0.1)),
+                    min_keep_ratio=float(getattr(branch_cfg, "soft_pvf_min_keep_ratio", 0.0)),
+                )
+                soft_result = apply_soft_pvf(
+                    synthetic_df=synthetic_base,
+                    accuracy_df=accuracy_df,
+                    judge_df=judge_df,
+                    model_name=context.model_name,
+                    branch=context.branch,
+                    generation=context.generation,
+                    seed=context.seed,
+                    policy=soft_policy,
+                    allow_partial_inputs=bool(self.cfg.runtime.continue_on_row_error),
+                )
+                save_soft_pvf_artifacts(
+                    result=soft_result,
+                    training_path=context.artifacts["soft_pvf_training"],
+                    decisions_path=context.artifacts["soft_pvf_decisions"],
+                    report_path=context.artifacts["soft_pvf_report"],
+                )
+                soft_result.training_df.to_parquet(context.artifacts["synthetic_train_next"], index=False)
+                soft_meta = {
+                    "method": "soft_pvf_medium",
+                    "policy_name": policy_name,
+                    "model_name": context.model_name,
+                    "branch": context.branch,
+                    "generation": context.generation,
+                    "seed": context.seed,
+                    "high_quality_threshold": soft_policy.high_quality_threshold,
+                    "medium_quality_threshold": soft_policy.medium_quality_threshold,
+                    "min_keep_ratio": soft_policy.min_keep_ratio,
+                    "total_candidates": soft_result.report.total_candidates,
+                    "kept_count": soft_result.report.kept_count,
+                    "rejected_count": soft_result.report.rejected_count,
+                    "keep_rate": soft_result.report.keep_rate,
+                    "effective_keep_rate": soft_result.report.effective_keep_rate,
+                    "mean_assigned_weight": soft_result.report.mean_assigned_weight,
+                }
+                context.artifacts["anchor_metadata"].write_text(
+                    json.dumps(soft_meta, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                context.artifacts["used_anchor_ids"].write_text("[]", encoding="utf-8")
+                if not context.artifacts["anchor_quality_diagnostics"].exists():
+                    pd.DataFrame(columns=["pairing_kind"]).to_parquet(
+                        context.artifacts["anchor_quality_diagnostics"], index=False
+                    )
+                return StageExecutionResult(row_count=int(len(soft_result.training_df)))
+
+            if branch_type == "dbr_medium":
+                dbr_policy = DBRPolicy(
+                    policy_name="dbr_medium",
+                    target_size_ratio=float(getattr(branch_cfg, "dbr_target_size_ratio", 1.0)),
+                    min_selection_rate=float(getattr(branch_cfg, "dbr_min_selection_rate", 0.80)),
+                    budget_parse_failure=float(getattr(branch_cfg, "dbr_budget_parse_failure", 0.00)),
+                    budget_silent_error=float(getattr(branch_cfg, "dbr_budget_silent_error", 0.10)),
+                    budget_incorrect_answer=float(getattr(branch_cfg, "dbr_budget_incorrect_answer", 0.30)),
+                    budget_low_reasoning=float(getattr(branch_cfg, "dbr_budget_low_reasoning", 0.25)),
+                    budget_low_structure=float(getattr(branch_cfg, "dbr_budget_low_structure", 0.30)),
+                    allow_parse_failure_fallback=bool(
+                        getattr(branch_cfg, "dbr_allow_parse_failure_fallback", False)
+                    ),
+                )
+                dbr_result = apply_dbr(
+                    synthetic_df=synthetic_base,
+                    accuracy_df=accuracy_df,
+                    judge_df=judge_df,
+                    model_name=context.model_name,
+                    branch=context.branch,
+                    generation=context.generation,
+                    seed=context.seed,
+                    policy=dbr_policy,
+                    allow_partial_inputs=bool(self.cfg.runtime.continue_on_row_error),
+                )
+                save_dbr_artifacts(
+                    result=dbr_result,
+                    training_path=context.artifacts["dbr_training"],
+                    decisions_path=context.artifacts["dbr_decisions"],
+                    report_path=context.artifacts["dbr_report"],
+                )
+                dbr_result.training_df.to_parquet(context.artifacts["synthetic_train_next"], index=False)
+                dbr_meta = {
+                    "method": "dbr_medium",
+                    "policy_name": dbr_policy.policy_name,
+                    "model_name": context.model_name,
+                    "branch": context.branch,
+                    "generation": context.generation,
+                    "seed": context.seed,
+                    "target_size_ratio": dbr_policy.target_size_ratio,
+                    "min_selection_rate": dbr_policy.min_selection_rate,
+                    "budgets": {
+                        "parse_failure": dbr_policy.budget_parse_failure,
+                        "silent_error": dbr_policy.budget_silent_error,
+                        "incorrect_answer": dbr_policy.budget_incorrect_answer,
+                        "low_reasoning": dbr_policy.budget_low_reasoning,
+                        "low_structure": dbr_policy.budget_low_structure,
+                    },
+                    "allow_parse_failure_fallback": dbr_policy.allow_parse_failure_fallback,
+                    "target_size": dbr_result.report.target_size,
+                    "selected_count": dbr_result.report.selected_count,
+                    "selection_rate": dbr_result.report.selection_rate,
+                    "relaxation_steps_used": dbr_result.report.relaxation_steps_used,
+                }
+                context.artifacts["anchor_metadata"].write_text(
+                    json.dumps(dbr_meta, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                context.artifacts["used_anchor_ids"].write_text("[]", encoding="utf-8")
+                if not context.artifacts["anchor_quality_diagnostics"].exists():
+                    pd.DataFrame(columns=["pairing_kind"]).to_parquet(
+                        context.artifacts["anchor_quality_diagnostics"], index=False
+                    )
+                return StageExecutionResult(row_count=int(len(dbr_result.training_df)))
+
+            if branch_type == "csr_medium":
+                csr_policy = CSRPolicy(
+                    policy_name="csr_medium",
+                    num_candidates=int(getattr(branch_cfg, "csr_num_candidates", 3)),
+                    candidate_temperature=float(
+                        getattr(branch_cfg, "csr_candidate_temperature", 0.7)
+                    ),
+                    min_pair_quality_gap=float(getattr(branch_cfg, "csr_min_pair_quality_gap", 2.0)),
+                    require_best_correct=bool(getattr(branch_cfg, "csr_require_best_correct", True)),
+                    require_best_non_silent=bool(
+                        getattr(branch_cfg, "csr_require_best_non_silent", True)
+                    ),
+                    allow_worst_incorrect=bool(
+                        getattr(branch_cfg, "csr_allow_worst_incorrect", True)
+                    ),
+                    allow_worst_silent=bool(getattr(branch_cfg, "csr_allow_worst_silent", True)),
+                    max_no_pair_rate_warn=float(
+                        getattr(branch_cfg, "csr_max_no_pair_rate_warn", 0.60)
+                    ),
+                )
+                if context.artifacts["csr_candidates"].exists():
+                    csr_candidates_df = pd.read_parquet(context.artifacts["csr_candidates"])
+                else:
+                    outputs_df = pd.read_parquet(context.artifacts["model_outputs"])
+                    csr_candidates_df = self._build_csr_candidates_sidecar(
+                        context=context,
+                        base_outputs_df=outputs_df,
+                        branch_cfg=branch_cfg,
+                    )
+                csr_scores_df = self._score_csr_candidates(
+                    context=context,
+                    candidates_df=csr_candidates_df,
+                )
+                csr_result = apply_csr(
+                    candidates_df=csr_candidates_df,
+                    candidate_scores_df=csr_scores_df,
+                    model_name=str(context.model_name),
+                    branch=str(context.branch),
+                    generation=int(context.generation),
+                    seed=int(context.seed),
+                    policy=csr_policy,
+                )
+                save_csr_artifacts(
+                    result=csr_result,
+                    candidates_path=context.artifacts["csr_candidates"],
+                    candidate_scores_path=context.artifacts["csr_candidate_scores"],
+                    pairs_path=context.artifacts["csr_pairs"],
+                    training_path=context.artifacts["csr_training"],
+                    report_path=context.artifacts["csr_report"],
+                )
+                csr_result.training_df.to_parquet(context.artifacts["synthetic_train_next"], index=False)
+                csr_meta = {
+                    "method": "csr_medium",
+                    "model_name": context.model_name,
+                    "branch": context.branch,
+                    "generation": context.generation,
+                    "seed": context.seed,
+                    "num_candidates": csr_policy.num_candidates,
+                    "candidate_temperature": csr_policy.candidate_temperature,
+                    "min_pair_quality_gap": csr_policy.min_pair_quality_gap,
+                    "pair_count": csr_result.report.pair_count,
+                    "pair_construction_rate": csr_result.report.pair_construction_rate,
+                    "no_pair_count": csr_result.report.no_pair_count,
+                    "mean_quality_gap": csr_result.report.mean_quality_gap,
+                    "best_accuracy": csr_result.report.best_accuracy,
+                    "worst_accuracy": csr_result.report.worst_accuracy,
+                    "best_silent_rate": csr_result.report.best_silent_rate,
+                    "worst_silent_rate": csr_result.report.worst_silent_rate,
+                    "no_pair_rate_warned": csr_result.report.no_pair_rate_warned,
+                    "evaluation_mode": self.cfg.experiment.mode,
+                }
+                context.artifacts["anchor_metadata"].write_text(
+                    json.dumps(csr_meta, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                context.artifacts["used_anchor_ids"].write_text("[]", encoding="utf-8")
+                if not context.artifacts["anchor_quality_diagnostics"].exists():
+                    pd.DataFrame(columns=["pairing_kind"]).to_parquet(
+                        context.artifacts["anchor_quality_diagnostics"], index=False
+                    )
+                return StageExecutionResult(row_count=int(len(csr_result.training_df)))
+
+            if branch_type == "pvr_repair_medium":
+                pvr_policy = PVRPolicy(
+                    threshold_score=int(getattr(branch_cfg, "pvr_threshold_score", 6)),
+                    min_keep_ratio=float(getattr(branch_cfg, "pvr_min_keep_ratio", 0.0)),
+                )
+                heldout_gold = self._get_heldout()[["example_id", "answer_gold"]].copy()
+                repair_client = self._get_pvr_repair_client()
+                pvr_result = apply_pvr(
+                    synthetic_df=synthetic_base,
+                    accuracy_df=accuracy_df,
+                    judge_df=judge_df,
+                    gold_df=heldout_gold,
+                    model_name=context.model_name,
+                    branch=context.branch,
+                    generation=context.generation,
+                    seed=context.seed,
+                    policy=pvr_policy,
+                    repair_model_name=repair_client.model_name,
+                    repair_callable=repair_client.repair,
+                    allow_partial_inputs=bool(self.cfg.runtime.continue_on_row_error),
+                )
+                save_pvr_artifacts(
+                    result=pvr_result,
+                    training_path=context.artifacts["pvr_training"],
+                    decisions_path=context.artifacts["pvr_decisions"],
+                    repair_pairs_path=context.artifacts["pvr_repair_pairs"],
+                    report_path=context.artifacts["pvr_report"],
+                )
+                pvr_result.training_df.to_parquet(context.artifacts["synthetic_train_next"], index=False)
+                pvr_meta = {
+                    "method": "pvr_repair_medium",
+                    "model_name": context.model_name,
+                    "branch": context.branch,
+                    "generation": context.generation,
+                    "seed": context.seed,
+                    "repair_provider": (self.cfg.repair.provider or self.cfg.judge.provider),
+                    "repair_model_name": repair_client.model_name,
+                    "threshold_score": pvr_policy.threshold_score,
+                    "min_keep_ratio": pvr_policy.min_keep_ratio,
+                    "total_candidates": pvr_result.report.total_candidates,
+                    "keep_count": pvr_result.report.keep_count,
+                    "repair_count": pvr_result.report.repair_count,
+                    "reject_count": pvr_result.report.reject_count,
+                    "repair_success_rate": pvr_result.report.repair_success_rate,
+                }
+                context.artifacts["anchor_metadata"].write_text(
+                    json.dumps(pvr_meta, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                context.artifacts["used_anchor_ids"].write_text("[]", encoding="utf-8")
+                if not context.artifacts["anchor_quality_diagnostics"].exists():
+                    pd.DataFrame(columns=["pairing_kind"]).to_parquet(
+                        context.artifacts["anchor_quality_diagnostics"], index=False
+                    )
+                return StageExecutionResult(row_count=int(len(pvr_result.training_df)))
+
+            if branch_type == "pair_lite_medium":
+                pair_policy = PAIRLitePolicy(
+                    threshold_score=int(getattr(branch_cfg, "pair_lite_threshold_score", 6)),
+                    min_keep_ratio=float(getattr(branch_cfg, "pair_lite_min_keep_ratio", 0.0)),
+                )
+                heldout_gold = self._get_heldout()[["example_id", "answer_gold"]].copy()
+                repair_client = self._get_pair_lite_repair_client()
+                pair_result = apply_pair_lite(
+                    synthetic_df=synthetic_base,
+                    accuracy_df=accuracy_df,
+                    judge_df=judge_df,
+                    gold_df=heldout_gold,
+                    model_name=context.model_name,
+                    branch=context.branch,
+                    generation=context.generation,
+                    seed=context.seed,
+                    policy=pair_policy,
+                    repair_model_name=repair_client.model_name,
+                    repair_callable=repair_client.repair,
+                    allow_partial_inputs=bool(self.cfg.runtime.continue_on_row_error),
+                )
+                save_pair_lite_artifacts(
+                    result=pair_result,
+                    training_path=context.artifacts["pair_lite_training"],
+                    decisions_path=context.artifacts["pair_lite_decisions"],
+                    repair_pairs_path=context.artifacts["pair_lite_repair_pairs"],
+                    report_path=context.artifacts["pair_lite_report"],
+                )
+                pair_result.training_df.to_parquet(context.artifacts["synthetic_train_next"], index=False)
+                pair_meta = {
+                    "method": "pair_lite_medium",
+                    "model_name": context.model_name,
+                    "branch": context.branch,
+                    "generation": context.generation,
+                    "seed": context.seed,
+                    "repair_provider": (self.cfg.repair.provider or self.cfg.judge.provider),
+                    "repair_model_name": repair_client.model_name,
+                    "threshold_score": pair_policy.threshold_score,
+                    "min_keep_ratio": pair_policy.min_keep_ratio,
+                    "target_rows": pair_result.report.target_rows,
+                    "kept_original_count": pair_result.report.kept_original_count,
+                    "repaired_count": pair_result.report.repaired_count,
+                    "rejected_count": pair_result.report.rejected_count,
+                    "repair_success_rate": pair_result.report.repair_success_rate,
+                }
+                context.artifacts["anchor_metadata"].write_text(
+                    json.dumps(pair_meta, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                context.artifacts["used_anchor_ids"].write_text("[]", encoding="utf-8")
+                if not context.artifacts["anchor_quality_diagnostics"].exists():
+                    pd.DataFrame(columns=["pairing_kind"]).to_parquet(
+                        context.artifacts["anchor_quality_diagnostics"], index=False
+                    )
+                return StageExecutionResult(row_count=int(len(pair_result.training_df)))
 
             anchor_pool = self._get_anchor_pool()
             base_train = pd.read_parquet(context.artifacts["base_train"])

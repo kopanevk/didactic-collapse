@@ -1,0 +1,1 @@
+{"stages": {"generation": {"status": "completed"}, "answer_extraction": {"status": "completed"}, "accuracy": {"status": "completed"}, "judge": {"status": "completed"}, "synthetic_build": {"status": "pending"}, "anchoring": {"status": "pending"}}}

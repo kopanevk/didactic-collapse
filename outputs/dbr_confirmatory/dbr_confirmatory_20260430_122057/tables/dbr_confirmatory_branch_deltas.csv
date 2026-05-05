@@ -1,0 +1,7 @@
+run_id,seed,model_name,generation,comparison,anchor_branch,evaluation_mode,delta_accuracy_mean,delta_pedagogical_score_mean,delta_silent_error_rate,delta_parse_failure_pred_rate
+dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,0,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.0,0.9800000000000004,-0.020000000000000018,-0.039999999999999994
+dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,0,soft_pvf_noisy_keep_minus_pure_recycling,soft_pvf_noisy_keep,inference_recycling_only,-0.06,0.21999999999999975,0.06,-0.019999999999999997
+dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,1,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.019999999999999962,-0.28000000000000025,0.020000000000000018,-0.019999999999999997
+dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,1,soft_pvf_noisy_keep_minus_pure_recycling,soft_pvf_noisy_keep,inference_recycling_only,-0.020000000000000018,-0.40000000000000036,0.0,-0.019999999999999997
+dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,2,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.15999999999999998,0.9399999999999995,-0.12,-0.019999999999999997
+dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,2,soft_pvf_noisy_keep_minus_pure_recycling,soft_pvf_noisy_keep,inference_recycling_only,0.06,0.5399999999999991,-0.019999999999999962,-0.039999999999999994

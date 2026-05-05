@@ -1,0 +1,7 @@
+seed,run_dir,sample_count_pure,sample_count_dbr,accuracy_mean_pure,accuracy_mean_dbr,pedagogical_score_mean_pure,pedagogical_score_mean_dbr,silent_error_rate_pure,silent_error_rate_dbr,delta_accuracy_dbr_minus_pure,delta_pedagogy_dbr_minus_pure,delta_silent_dbr_minus_pure,summary_metric,summary_mean,summary_std,summary_ci95_low,summary_ci95_high,summary_n
+211,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed211_20260428_222918,50,50,0.52,0.46,5.14,4.98,0.3,0.28,-0.06,-0.15999999999999925,-0.019999999999999962,,,,,,
+212,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed212_20260428_230709,48,50,0.3125,0.4,5.041666666666667,4.7,0.2708333333333333,0.22,0.08750000000000002,-0.3416666666666668,-0.050833333333333314,,,,,,
+213,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed213_20260430_115105,50,50,0.42,0.58,4.48,5.42,0.3,0.18,0.15999999999999998,0.9399999999999995,-0.12,,,,,,
+,,,,,,,,,,,,,delta_accuracy_dbr_minus_pure,0.0625,0.1121104366238933,-0.0643649018969917,0.1893649018969917,3.0
+,,,,,,,,,,,,,delta_pedagogy_dbr_minus_pure,0.14611111111111116,0.693502249722645,-0.6386605615884099,0.9308827838106323,3.0
+,,,,,,,,,,,,,delta_silent_dbr_minus_pure,-0.06361111111111109,0.051209898493393885,-0.12156056652456645,-0.0056616556976557195,3.0

@@ -1,0 +1,11 @@
+pairwise_dir,check_name,status,left_count,right_count,summary_value,recomputed_value,abs_diff
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,selected_vs_hidden_pair_ids,ok,48.0,48.0,,,
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,selected_vs_llama_pair_ids,ok,48.0,48.0,,,
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,selected_vs_qwen_pair_ids,ok,48.0,48.0,,,
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,manual_audit_branch_labels_hidden,ok,0.0,0.0,,,
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,summary_llama_anchor_win_rate,ok,,,0.4166666666666667,0.4166666666666667,0.0
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,summary_llama_pure_win_rate,ok,,,0.5833333333333334,0.5833333333333334,0.0
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,summary_llama_tie_rate,ok,,,0.0,0.0,0.0
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,summary_qwen_anchor_win_rate,ok,,,0.2291666666666666,0.22916666666666666,5.551115123125783e-17
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,summary_qwen_pure_win_rate,ok,,,0.3125,0.3125,0.0
+C:\Users\kiris\Documents\New project\outputs\judge_sensitivity\pairwise_confirmatory_20260426_122530,summary_qwen_tie_rate,ok,,,0.4583333333333333,0.4583333333333333,0.0

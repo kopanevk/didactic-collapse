@@ -1,0 +1,10 @@
+run_id,seed,model_name,generation,comparison,anchor_branch,evaluation_mode,delta_accuracy_mean,delta_pedagogical_score_mean,delta_silent_error_rate,delta_parse_failure_pred_rate
+dbr_only_confirmatory_seed221_20260430_144427,221,qwen2.5:0.5b,0,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.06,-0.1000000000000005,-0.08,0.0099999999999999
+dbr_only_confirmatory_seed221_20260430_144427,221,qwen2.5:0.5b,1,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,-0.0399999999999999,-0.5700000000000003,0.03,0.02
+dbr_only_confirmatory_seed221_20260430_144427,221,qwen2.5:0.5b,2,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.0699999999999999,0.5300000000000002,-0.01,0.03
+dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,0,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,-0.09,0.0600000000000005,0.01,0.0099999999999999
+dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,1,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,-0.04,0.1499999999999994,-0.09,-0.0199999999999999
+dbr_only_confirmatory_seed222_20260430_152134,222,qwen2.5:0.5b,2,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.01,-0.3799999999999999,0.0099999999999999,-0.0099999999999999
+dbr_only_confirmatory_seed223_20260430_160138,223,qwen2.5:0.5b,0,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,-0.0099999999999999,0.3700000000000001,0.02,0.0499999999999999
+dbr_only_confirmatory_seed223_20260430_160138,223,qwen2.5:0.5b,1,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,-0.01,0.3699999999999992,-0.01,-0.01
+dbr_only_confirmatory_seed223_20260430_160138,223,qwen2.5:0.5b,2,dbr_medium_minus_pure_recycling,dbr_medium,inference_recycling_only,0.0199999999999999,-0.0900000000000007,0.08,0.0499999999999999

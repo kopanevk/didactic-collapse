@@ -479,6 +479,14 @@ def run_qwen_rejudge(
         api_key_env=cfg.judge.api_key_env,
         timeout_sec=cfg.judge.timeout_sec,
         max_retries=cfg.judge.max_retries,
+        max_completion_tokens=cfg.judge.max_completion_tokens,
+        comment_max_chars=cfg.judge.comment_max_chars,
+        cache_enabled=cfg.judge.cache_enabled,
+        cache_path=cfg.judge.cache_path,
+        min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+        max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+        max_429_retries=cfg.judge.cerebras_max_429_retries,
+        jitter_sec=cfg.judge.cerebras_jitter_sec,
     )
     rubric_prompt = load_judge_prompt(cfg.paths.prompt_dir)
 

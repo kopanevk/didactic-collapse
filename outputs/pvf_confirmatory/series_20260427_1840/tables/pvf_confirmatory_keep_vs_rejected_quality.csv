@@ -1,0 +1,10 @@
+run_id,seed,model_name,branch,generation,keep_rate,kept_count,rejected_count,total_candidates,threshold_score,min_keep_ratio,kept_accuracy_mean,rejected_accuracy_mean,kept_pedagogical_mean,rejected_pedagogical_mean,kept_silent_error_rate,rejected_silent_error_rate,evaluation_mode
+pvf_confirmatory_seed91_20260427_094105,91,qwen2.5:0.5b,pvf_medium,0,0.42,21,29,50,5,0.15,1.0,0.0,8.0,2.8620689655172415,0.0,0.27586206896551724,inference_recycling_only
+pvf_confirmatory_seed91_20260427_094105,91,qwen2.5:0.5b,pvf_medium,1,0.44,22,28,50,5,0.15,1.0,0.0,7.954545454545454,1.7142857142857142,0.0,0.39285714285714285,inference_recycling_only
+pvf_confirmatory_seed91_20260427_094105,91,qwen2.5:0.5b,pvf_medium,2,0.44,22,28,50,5,0.15,1.0,0.17857142857142858,8.0,2.107142857142857,0.0,0.5,inference_recycling_only
+pvf_confirmatory_seed92_20260427_100222,92,qwen2.5:0.5b,pvf_medium,0,0.42,21,29,50,5,0.15,1.0,0.0,8.0,2.8275862068965516,0.0,0.5862068965517241,inference_recycling_only
+pvf_confirmatory_seed92_20260427_100222,92,qwen2.5:0.5b,pvf_medium,1,0.42,21,29,50,5,0.15,1.0,0.0,8.0,2.4827586206896552,0.0,0.3103448275862069,inference_recycling_only
+pvf_confirmatory_seed92_20260427_100222,92,qwen2.5:0.5b,pvf_medium,2,0.44,22,28,50,5,0.15,1.0,0.0,8.0,2.607142857142857,0.0,0.4642857142857143,inference_recycling_only
+pvf_confirmatory_seed93_20260427_102402,93,qwen2.5:0.5b,pvf_medium,0,0.42,21,29,50,5,0.15,1.0,0.06896551724137931,8.0,3.6206896551724137,0.0,0.5172413793103449,inference_recycling_only
+pvf_confirmatory_seed93_20260427_102402,93,qwen2.5:0.5b,pvf_medium,1,0.48,24,26,50,5,0.15,1.0,0.0,8.0,1.7307692307692308,0.0,0.5384615384615384,inference_recycling_only
+pvf_confirmatory_seed93_20260427_102402,93,qwen2.5:0.5b,pvf_medium,2,0.4,20,30,50,5,0.15,1.0,0.06666666666666667,8.0,1.9666666666666666,0.0,0.43333333333333335,inference_recycling_only

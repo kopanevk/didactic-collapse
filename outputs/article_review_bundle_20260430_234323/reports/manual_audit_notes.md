@@ -1,0 +1,4 @@
+- Manual audit template source: `manual_dbr_pairwise_audit_template.csv`.
+- Pair rows: 36.
+- Filled `human_winner` labels: 0.
+- Treat as qualitative sanity check unless a fully encoded label table is provided.

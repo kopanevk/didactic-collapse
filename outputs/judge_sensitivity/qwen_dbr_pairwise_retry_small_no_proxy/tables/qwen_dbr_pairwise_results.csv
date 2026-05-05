@@ -1,0 +1,2 @@
+pair_id,judge_label,judge_provider,judge_model,winner,confidence,reason,repair_applied,repair_actions
+dbr_pair_0002,qwen_dbr_pairwise,cerebras,qwen-3-235b-a22b-instruct-2507,B,2,"Explanation B is better structured with clear section headers, consistent formatting, and a more formal pedagogical flow. It emphasizes reasoning in each step and clearly separates concepts, making it easier for learners to follow and replicate the problem-solving process.",False,

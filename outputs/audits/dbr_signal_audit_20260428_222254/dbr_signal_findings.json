@@ -1,0 +1,29 @@
+{
+  "run_dir": "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\pair_lite_shakedown_20260428_213313",
+  "audit_out_dir": "C:\\Users\\kiris\\Documents\\New project\\outputs\\audits\\dbr_signal_audit_20260428_222254",
+  "verdict": "ok",
+  "critical_count": 0,
+  "high_count": 0,
+  "medium_count": 0,
+  "low_count": 0,
+  "matched_summary": {
+    "matched_count": 50,
+    "pure_count": 50,
+    "dbr_count": 50,
+    "accuracy_mean_pure_matched": 0.46,
+    "accuracy_mean_dbr_matched": 0.52,
+    "pedagogy_mean_pure_matched": 5.22,
+    "pedagogy_mean_dbr_matched": 5.9,
+    "silent_rate_pure_matched": 0.22,
+    "silent_rate_dbr_matched": 0.2
+  },
+  "aggregate_vs_matched": {
+    "delta_accuracy_agg_dbr_minus_pure": 0.06,
+    "delta_accuracy_matched_dbr_minus_pure": 0.06,
+    "delta_pedagogy_agg_dbr_minus_pure": 0.6800000000000006,
+    "delta_pedagogy_matched_dbr_minus_pure": 0.6800000000000006,
+    "delta_silent_agg_dbr_minus_pure": -0.01999999999999999,
+    "delta_silent_matched_dbr_minus_pure": -0.01999999999999999
+  },
+  "findings": []
+}

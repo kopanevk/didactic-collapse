@@ -1,0 +1,10 @@
+{
+  "evaluation_mode": "inference_recycling_only",
+  "run_count": 3,
+  "run_dirs": [
+    "outputs\\runs\\pvf_confirmatory_seed91_20260427_094105",
+    "outputs\\runs\\pvf_confirmatory_seed92_20260427_100222",
+    "outputs\\runs\\pvf_confirmatory_seed93_20260427_102402"
+  ],
+  "notes": "Confirmatory PVF stress analysis over completed runs; not full retraining."
+}

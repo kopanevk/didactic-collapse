@@ -12,6 +12,13 @@ from didactic_collapse.analysis.pairwise_judge_sensitivity import run_pairwise_j
 from didactic_collapse.analysis.mode_comparison import export_mode_comparison_analysis
 from didactic_collapse.analysis.pvf_confirmatory import export_pvf_confirmatory_analysis
 from didactic_collapse.analysis.pvf_stress import export_pvf_stress_analysis
+from didactic_collapse.analysis.dbr import export_dbr_analysis
+from didactic_collapse.analysis.csr import export_csr_analysis
+from didactic_collapse.analysis.dbr_confirmatory import export_dbr_confirmatory_analysis
+from didactic_collapse.analysis.pvr import export_pvr_analysis
+from didactic_collapse.analysis.pair_lite import export_pair_lite_analysis
+from didactic_collapse.analysis.soft_pvf import export_soft_pvf_analysis
+from didactic_collapse.analysis.soft_pvf_confirmatory import export_soft_pvf_confirmatory_analysis
 from didactic_collapse.clients.judge_client import (
     cerebras_judge_auth_smoke_check,
     cerebras_judge_rubric_format_check,
@@ -27,6 +34,8 @@ from didactic_collapse.orchestration.training_feasibility import (
 )
 from didactic_collapse.orchestration.training_feasibility_series import run_training_feasibility_series
 from didactic_collapse.orchestration.pvf_confirmatory import run_pvf_confirmatory_series
+from didactic_collapse.orchestration.dbr_confirmatory import run_dbr_confirmatory_series
+from didactic_collapse.orchestration.soft_pvf_confirmatory import run_soft_pvf_confirmatory_series
 from didactic_collapse.utils.logging_utils import setup_logging
 
 app = typer.Typer(help="Didactic collapse experiment orchestration CLI")
@@ -177,6 +186,403 @@ def pvf_stress_test(
     typer.echo(f"PVF reject reasons CSV: {artifacts.reject_reasons_csv}")
     typer.echo(f"PVF keep-vs-rejected CSV: {artifacts.keep_reject_quality_csv}")
     typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def soft_pvf_shakedown(
+    config: str = "configs/soft_pvf_shakedown.yaml",
+    sample_size: int = 50,
+) -> None:
+    """Run soft-PVF shakedown and export soft-vs-hard PVF analysis tables."""
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "soft_pvf_shakedown_latest.log"
+    setup_logging(log_file)
+
+    summary = run_first_experiment(cfg=cfg, sample_size=sample_size)
+    artifacts = export_soft_pvf_analysis(
+        run_dir=summary.run_dir,
+        out_dir=summary.run_dir / "tables",
+    )
+
+    typer.echo("Soft PVF shakedown finished")
+    typer.echo(f"Config: {config}")
+    typer.echo(f"Run dir: {summary.run_dir}")
+    typer.echo(f"Model: {summary.model_name}")
+    typer.echo(f"Branches: {', '.join(summary.branches)}")
+    typer.echo(f"Generations: {', '.join(str(g) for g in summary.generations)}")
+    typer.echo(f"Sample size requested/used: {summary.sample_size_requested}/{summary.sample_size_used}")
+    typer.echo(f"Run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"Generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"Branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"Policy summary CSV: {artifacts.policy_summary_csv}")
+    typer.echo(f"Decision reasons CSV: {artifacts.decision_reasons_csv}")
+    typer.echo(f"Keep-vs-rejected CSV: {artifacts.keep_rejected_quality_csv}")
+    typer.echo(f"Weight distribution CSV: {artifacts.weight_distribution_csv}")
+    typer.echo(f"Stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+    typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def soft_pvf_analyze(
+    run_dir: str,
+    out_dir: str = "",
+) -> None:
+    """Analyze an existing run with soft PVF artifacts."""
+    run_path = Path(run_dir)
+    target_out = Path(out_dir) if out_dir else (run_path / "tables")
+    artifacts = export_soft_pvf_analysis(run_dir=run_path, out_dir=target_out)
+    typer.echo("Soft PVF analysis export finished")
+    typer.echo(f"Run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"Generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"Branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"Policy summary CSV: {artifacts.policy_summary_csv}")
+    typer.echo(f"Decision reasons CSV: {artifacts.decision_reasons_csv}")
+    typer.echo(f"Keep-vs-rejected CSV: {artifacts.keep_rejected_quality_csv}")
+    typer.echo(f"Weight distribution CSV: {artifacts.weight_distribution_csv}")
+    typer.echo(f"Stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+
+
+@app.command()
+def soft_pvf_policy_tuning_analyze(
+    run_dir: str,
+    out_dir: str = "",
+) -> None:
+    """Analyze an existing run with Soft PVF policy-tuning output filenames."""
+    run_path = Path(run_dir)
+    target_out = Path(out_dir) if out_dir else (run_path / "tables")
+    artifacts = export_soft_pvf_analysis(
+        run_dir=run_path,
+        out_dir=target_out,
+        file_prefix="soft_pvf_policy_tuning",
+    )
+    typer.echo("Soft PVF policy-tuning analysis export finished")
+    typer.echo(f"Run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"Policy summary CSV: {artifacts.policy_summary_csv}")
+    typer.echo(f"Generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"Branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"Decision reasons CSV: {artifacts.decision_reasons_csv}")
+    typer.echo(f"Keep-vs-rejected CSV: {artifacts.keep_rejected_quality_csv}")
+    typer.echo(f"Weight distribution CSV: {artifacts.weight_distribution_csv}")
+    typer.echo(f"Stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+
+
+@app.command()
+def pvr_shakedown(
+    config: str = "configs/pvr_shakedown.yaml",
+    sample_size: int = 50,
+) -> None:
+    """Run PVR shakedown and export PVR stress tables."""
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "pvr_shakedown_latest.log"
+    setup_logging(log_file)
+
+    summary = run_first_experiment(cfg=cfg, sample_size=sample_size)
+    artifacts = export_pvr_analysis(
+        run_dir=summary.run_dir,
+        out_dir=summary.run_dir / "tables",
+    )
+
+    typer.echo("PVR shakedown finished")
+    typer.echo(f"Config: {config}")
+    typer.echo(f"Run dir: {summary.run_dir}")
+    typer.echo(f"Model: {summary.model_name}")
+    typer.echo(f"Branches: {', '.join(summary.branches)}")
+    typer.echo(f"Generations: {', '.join(str(g) for g in summary.generations)}")
+    typer.echo(f"Sample size requested/used: {summary.sample_size_requested}/{summary.sample_size_used}")
+    typer.echo(f"PVR run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"PVR generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"PVR branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"PVR decision reasons CSV: {artifacts.decision_reasons_csv}")
+    typer.echo(f"PVR repair success CSV: {artifacts.repair_success_summary_csv}")
+    typer.echo(f"PVR keep/repair/reject quality CSV: {artifacts.keep_repair_reject_quality_csv}")
+    typer.echo(f"PVR stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+    typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def pvr_analyze(
+    run_dir: str,
+    out_dir: str = "",
+) -> None:
+    """Analyze existing run with PVR artifacts."""
+    run_path = Path(run_dir)
+    target_out = Path(out_dir) if out_dir else (run_path / "tables")
+    artifacts = export_pvr_analysis(run_dir=run_path, out_dir=target_out)
+    typer.echo("PVR analysis export finished")
+    typer.echo(f"PVR run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"PVR generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"PVR branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"PVR decision reasons CSV: {artifacts.decision_reasons_csv}")
+    typer.echo(f"PVR repair success CSV: {artifacts.repair_success_summary_csv}")
+    typer.echo(f"PVR keep/repair/reject quality CSV: {artifacts.keep_repair_reject_quality_csv}")
+    typer.echo(f"PVR stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+
+
+@app.command()
+def pair_lite_shakedown(
+    config: str = "configs/pair_lite_shakedown.yaml",
+    sample_size: int = 50,
+) -> None:
+    """Run PAIR-lite shakedown and export PAIR-lite stress tables."""
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "pair_lite_shakedown_latest.log"
+    setup_logging(log_file)
+
+    summary = run_first_experiment(cfg=cfg, sample_size=sample_size)
+    artifacts = export_pair_lite_analysis(
+        run_dir=summary.run_dir,
+        out_dir=summary.run_dir / "tables",
+    )
+
+    typer.echo("PAIR-lite shakedown finished")
+    typer.echo(f"Config: {config}")
+    typer.echo(f"Run dir: {summary.run_dir}")
+    typer.echo(f"Model: {summary.model_name}")
+    typer.echo(f"Branches: {', '.join(summary.branches)}")
+    typer.echo(f"Generations: {', '.join(str(g) for g in summary.generations)}")
+    typer.echo(f"Sample size requested/used: {summary.sample_size_requested}/{summary.sample_size_used}")
+    typer.echo(f"PAIR-lite run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"PAIR-lite generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"PAIR-lite branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"PAIR-lite action reasons CSV: {artifacts.action_reasons_csv}")
+    typer.echo(f"PAIR-lite repair success CSV: {artifacts.repair_success_summary_csv}")
+    typer.echo(f"PAIR-lite keep/repair/reject quality CSV: {artifacts.keep_repair_reject_quality_csv}")
+    typer.echo(f"PAIR-lite stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+    typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def pair_lite_analyze(
+    run_dir: str,
+    out_dir: str = "",
+) -> None:
+    """Analyze existing run with PAIR-lite artifacts."""
+    run_path = Path(run_dir)
+    target_out = Path(out_dir) if out_dir else (run_path / "tables")
+    artifacts = export_pair_lite_analysis(run_dir=run_path, out_dir=target_out)
+    typer.echo("PAIR-lite analysis export finished")
+    typer.echo(f"PAIR-lite run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"PAIR-lite generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"PAIR-lite branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"PAIR-lite action reasons CSV: {artifacts.action_reasons_csv}")
+    typer.echo(f"PAIR-lite repair success CSV: {artifacts.repair_success_summary_csv}")
+    typer.echo(f"PAIR-lite keep/repair/reject quality CSV: {artifacts.keep_repair_reject_quality_csv}")
+    typer.echo(f"PAIR-lite stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+
+
+@app.command()
+def dbr_shakedown(
+    config: str = "configs/dbr_shakedown.yaml",
+    sample_size: int = 50,
+) -> None:
+    """Run DBR-lite shakedown and export DBR stress tables."""
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "dbr_shakedown_latest.log"
+    setup_logging(log_file)
+
+    summary = run_first_experiment(cfg=cfg, sample_size=sample_size)
+    artifacts = export_dbr_analysis(
+        run_dir=summary.run_dir,
+        out_dir=summary.run_dir / "tables",
+        file_prefix="dbr",
+    )
+
+    typer.echo("DBR shakedown finished")
+    typer.echo(f"Config: {config}")
+    typer.echo(f"Run dir: {summary.run_dir}")
+    typer.echo(f"Model: {summary.model_name}")
+    typer.echo(f"Branches: {', '.join(summary.branches)}")
+    typer.echo(f"Generations: {', '.join(str(g) for g in summary.generations)}")
+    typer.echo(f"Sample size requested/used: {summary.sample_size_requested}/{summary.sample_size_used}")
+    typer.echo(f"DBR run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"DBR generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"DBR branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"DBR budget summary CSV: {artifacts.budget_summary_csv}")
+    typer.echo(f"DBR defect rates CSV: {artifacts.defect_rates_before_after_csv}")
+    typer.echo(f"DBR bucket coverage CSV: {artifacts.bucket_coverage_csv}")
+    typer.echo(f"DBR stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+    typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def csr_shakedown(
+    config: str = "configs/csr_shakedown.yaml",
+    sample_size: int = 30,
+) -> None:
+    """Run CSR shakedown and export CSR analysis tables."""
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "csr_shakedown_latest.log"
+    setup_logging(log_file)
+
+    summary = run_first_experiment(cfg=cfg, sample_size=sample_size)
+    artifacts = export_csr_analysis(
+        run_dir=summary.run_dir,
+        out_dir=summary.run_dir / "tables",
+        file_prefix="csr",
+    )
+
+    typer.echo("CSR shakedown finished")
+    typer.echo(f"Config: {config}")
+    typer.echo(f"Run dir: {summary.run_dir}")
+    typer.echo(f"Model: {summary.model_name}")
+    typer.echo(f"Branches: {', '.join(summary.branches)}")
+    typer.echo(f"Generations: {', '.join(str(g) for g in summary.generations)}")
+    typer.echo(f"Sample size requested/used: {summary.sample_size_requested}/{summary.sample_size_used}")
+    typer.echo(f"CSR run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"CSR pair summary CSV: {artifacts.pair_summary_csv}")
+    typer.echo(f"CSR generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"CSR branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"CSR best-vs-worst CSV: {artifacts.best_vs_worst_quality_csv}")
+    typer.echo(f"CSR stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def csr_analyze(
+    run_dir: str,
+    out_dir: str = "",
+) -> None:
+    """Analyze existing run with CSR artifacts."""
+    run_path = Path(run_dir)
+    target_out = Path(out_dir) if out_dir else (run_path / "tables")
+    artifacts = export_csr_analysis(run_dir=run_path, out_dir=target_out, file_prefix="csr")
+    typer.echo("CSR analysis export finished")
+    typer.echo(f"CSR run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"CSR pair summary CSV: {artifacts.pair_summary_csv}")
+    typer.echo(f"CSR generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"CSR branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"CSR best-vs-worst CSV: {artifacts.best_vs_worst_quality_csv}")
+    typer.echo(f"CSR stress summary CSV: {artifacts.stress_summary_csv}")
+
+
+@app.command()
+def dbr_analyze(
+    run_dir: str,
+    out_dir: str = "",
+) -> None:
+    """Analyze an existing run with DBR artifacts."""
+    run_path = Path(run_dir)
+    target_out = Path(out_dir) if out_dir else (run_path / "tables")
+    artifacts = export_dbr_analysis(run_dir=run_path, out_dir=target_out, file_prefix="dbr")
+    typer.echo("DBR analysis export finished")
+    typer.echo(f"DBR run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"DBR generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"DBR branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"DBR budget summary CSV: {artifacts.budget_summary_csv}")
+    typer.echo(f"DBR defect rates CSV: {artifacts.defect_rates_before_after_csv}")
+    typer.echo(f"DBR bucket coverage CSV: {artifacts.bucket_coverage_csv}")
+    typer.echo(f"DBR stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+
+
+@app.command()
+def dbr_confirmatory(
+    config: str = "configs/dbr_confirmatory.yaml",
+    sample_size: int = 50,
+    seeds: str = "211,212,213",
+) -> None:
+    """Run multi-seed DBR confirmatory series with per-seed resume."""
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "dbr_confirmatory_latest.log"
+    setup_logging(log_file)
+
+    summary = run_dbr_confirmatory_series(
+        cfg=cfg,
+        sample_size=sample_size,
+        seeds=parse_seed_list(seeds),
+    )
+
+    typer.echo("DBR confirmatory series finished")
+    typer.echo(f"Config: {config}")
+    typer.echo(f"Seeds: {', '.join(str(s) for s in summary.seeds)}")
+    typer.echo(f"Sample size: {summary.sample_size}")
+    for seed, item in zip(summary.seeds, summary.runs):
+        typer.echo(f"Run (seed={seed})")
+        typer.echo(f" - run_dir: {item.run_dir}")
+        typer.echo(f" - branches: {', '.join(item.branches)}")
+        typer.echo(f" - generations: {', '.join(str(g) for g in item.generations)}")
+        typer.echo(f" - summary: {item.summary_table_path_csv}")
+    typer.echo(f"Analysis dir: {summary.analysis_dir}")
+    typer.echo(f"Run-level CSV: {summary.artifacts.run_level_csv}")
+    typer.echo(f"Seed stats CSV: {summary.artifacts.seed_stats_csv}")
+    typer.echo(f"Generation deltas CSV: {summary.artifacts.generation_deltas_csv}")
+    typer.echo(f"Branch deltas CSV: {summary.artifacts.branch_deltas_csv}")
+    typer.echo(f"Budget summary CSV: {summary.artifacts.budget_summary_csv}")
+    typer.echo(f"Defect rates CSV: {summary.artifacts.defect_rates_csv}")
+    typer.echo(f"Bucket coverage CSV: {summary.artifacts.bucket_coverage_csv}")
+    typer.echo(f"Stress summary CSV: {summary.artifacts.stress_summary_csv}")
+    typer.echo(f"Matched Gen2 CSV: {summary.artifacts.matched_gen2_csv}")
+    typer.echo(f"Accuracy plot: {summary.artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {summary.artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {summary.artifacts.silent_error_plot}")
+    typer.echo(f"Selection-rate plot: {summary.artifacts.selection_rate_plot}")
+    typer.echo(f"Defect-rates plot: {summary.artifacts.defect_rates_plot}")
+    typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def dbr_confirmatory_analyze(
+    run_dirs: list[str],
+    out_dir: str = "",
+) -> None:
+    """Analyze finished runs as one DBR confirmatory series."""
+    if not run_dirs:
+        raise typer.BadParameter("Provide at least one run_dir")
+    target_out = Path(out_dir) if out_dir else Path(run_dirs[-1]) / "tables"
+    artifacts = export_dbr_confirmatory_analysis(
+        run_dirs=[Path(x) for x in run_dirs],
+        out_dir=target_out,
+    )
+    typer.echo("DBR confirmatory analysis export finished")
+    typer.echo(f"Run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"Seed stats CSV: {artifacts.seed_stats_csv}")
+    typer.echo(f"Generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"Branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"Budget summary CSV: {artifacts.budget_summary_csv}")
+    typer.echo(f"Defect rates CSV: {artifacts.defect_rates_csv}")
+    typer.echo(f"Bucket coverage CSV: {artifacts.bucket_coverage_csv}")
+    typer.echo(f"Stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Matched Gen2 CSV: {artifacts.matched_gen2_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Selection-rate plot: {artifacts.selection_rate_plot}")
+    typer.echo(f"Defect-rates plot: {artifacts.defect_rates_plot}")
 
 
 @app.command()
@@ -359,6 +765,77 @@ def pvf_confirmatory_analyze(
 
 
 @app.command()
+def soft_pvf_confirmatory(
+    config: str = "configs/soft_pvf_confirmatory.yaml",
+    sample_size: int = 50,
+    seeds: str = "141,142,143",
+) -> None:
+    """Run multi-seed confirmatory Soft-PVF series with per-seed resume."""
+    cfg = load_config(config)
+    log_file = Path(cfg.paths.output_root) / "runs" / "soft_pvf_confirmatory_latest.log"
+    setup_logging(log_file)
+
+    summary = run_soft_pvf_confirmatory_series(
+        cfg=cfg,
+        sample_size=sample_size,
+        seeds=parse_seed_list(seeds),
+    )
+
+    typer.echo("Soft PVF confirmatory series finished")
+    typer.echo(f"Config: {config}")
+    typer.echo(f"Seeds: {', '.join(str(s) for s in summary.seeds)}")
+    typer.echo(f"Sample size: {summary.sample_size}")
+    for seed, item in zip(summary.seeds, summary.runs):
+        typer.echo(f"Run (seed={seed})")
+        typer.echo(f" - run_dir: {item.run_dir}")
+        typer.echo(f" - branches: {', '.join(item.branches)}")
+        typer.echo(f" - generations: {', '.join(str(g) for g in item.generations)}")
+        typer.echo(f" - summary: {item.summary_table_path_csv}")
+    typer.echo(f"Analysis dir: {summary.analysis_dir}")
+    typer.echo(f"Run-level CSV: {summary.artifacts.run_level_csv}")
+    typer.echo(f"Seed stats CSV: {summary.artifacts.seed_stats_csv}")
+    typer.echo(f"Generation deltas CSV: {summary.artifacts.generation_deltas_csv}")
+    typer.echo(f"Branch deltas CSV: {summary.artifacts.branch_deltas_csv}")
+    typer.echo(f"Decision reasons CSV: {summary.artifacts.decision_reasons_csv}")
+    typer.echo(f"Keep-vs-rejected CSV: {summary.artifacts.keep_reject_quality_csv}")
+    typer.echo(f"Policy summary CSV: {summary.artifacts.policy_summary_csv}")
+    typer.echo(f"Stress summary CSV: {summary.artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {summary.artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {summary.artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {summary.artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {summary.artifacts.keep_rate_plot}")
+    typer.echo("Evaluation mode: inference_recycling_only (not full retraining)")
+
+
+@app.command()
+def soft_pvf_confirmatory_analyze(
+    run_dirs: list[str],
+    out_dir: str = "",
+) -> None:
+    """Analyze finished runs as one Soft-PVF confirmatory series."""
+    if not run_dirs:
+        raise typer.BadParameter("Provide at least one run_dir")
+    target_out = Path(out_dir) if out_dir else Path(run_dirs[-1]) / "tables"
+    artifacts = export_soft_pvf_confirmatory_analysis(
+        run_dirs=[Path(x) for x in run_dirs],
+        out_dir=target_out,
+    )
+    typer.echo("Soft PVF confirmatory analysis export finished")
+    typer.echo(f"Run-level CSV: {artifacts.run_level_csv}")
+    typer.echo(f"Seed stats CSV: {artifacts.seed_stats_csv}")
+    typer.echo(f"Generation deltas CSV: {artifacts.generation_deltas_csv}")
+    typer.echo(f"Branch deltas CSV: {artifacts.branch_deltas_csv}")
+    typer.echo(f"Decision reasons CSV: {artifacts.decision_reasons_csv}")
+    typer.echo(f"Keep-vs-rejected CSV: {artifacts.keep_reject_quality_csv}")
+    typer.echo(f"Policy summary CSV: {artifacts.policy_summary_csv}")
+    typer.echo(f"Stress summary CSV: {artifacts.stress_summary_csv}")
+    typer.echo(f"Accuracy plot: {artifacts.accuracy_plot}")
+    typer.echo(f"Pedagogical plot: {artifacts.pedagogical_plot}")
+    typer.echo(f"Silent-error plot: {artifacts.silent_error_plot}")
+    typer.echo(f"Keep-rate plot: {artifacts.keep_rate_plot}")
+
+
+@app.command()
 def train_feasibility_series(
     config: str = "configs/mode_compare_training.yaml",
     sample_size: int = 50,
@@ -477,12 +954,30 @@ def judge_sensitivity_qwen(
             base_url=cfg.judge.base_url,
             api_key_env=cfg.judge.api_key_env,
             timeout_sec=cfg.judge.timeout_sec,
+            max_retries=cfg.judge.max_retries,
+            max_completion_tokens=cfg.judge.max_completion_tokens,
+            comment_max_chars=cfg.judge.comment_max_chars,
+            cache_enabled=cfg.judge.cache_enabled,
+            cache_path=cfg.judge.cache_path,
+            min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+            max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+            max_429_retries=cfg.judge.cerebras_max_429_retries,
+            jitter_sec=cfg.judge.cerebras_jitter_sec,
         )
         _ = cerebras_judge_rubric_format_check(
             model_name=cfg.judge.model_name,
             base_url=cfg.judge.base_url,
             api_key_env=cfg.judge.api_key_env,
             timeout_sec=cfg.judge.timeout_sec,
+            max_retries=cfg.judge.max_retries,
+            max_completion_tokens=cfg.judge.max_completion_tokens,
+            comment_max_chars=cfg.judge.comment_max_chars,
+            cache_enabled=cfg.judge.cache_enabled,
+            cache_path=cfg.judge.cache_path,
+            min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+            max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+            max_429_retries=cfg.judge.cerebras_max_429_retries,
+            jitter_sec=cfg.judge.cerebras_jitter_sec,
         )
 
     artifacts = run_qwen_judge_sensitivity(
@@ -536,12 +1031,30 @@ def judge_sensitivity_qwen_confirmatory(
             base_url=cfg.judge.base_url,
             api_key_env=cfg.judge.api_key_env,
             timeout_sec=cfg.judge.timeout_sec,
+            max_retries=cfg.judge.max_retries,
+            max_completion_tokens=cfg.judge.max_completion_tokens,
+            comment_max_chars=cfg.judge.comment_max_chars,
+            cache_enabled=cfg.judge.cache_enabled,
+            cache_path=cfg.judge.cache_path,
+            min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+            max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+            max_429_retries=cfg.judge.cerebras_max_429_retries,
+            jitter_sec=cfg.judge.cerebras_jitter_sec,
         )
         _ = cerebras_judge_rubric_format_check(
             model_name=cfg.judge.model_name,
             base_url=cfg.judge.base_url,
             api_key_env=cfg.judge.api_key_env,
             timeout_sec=cfg.judge.timeout_sec,
+            max_retries=cfg.judge.max_retries,
+            max_completion_tokens=cfg.judge.max_completion_tokens,
+            comment_max_chars=cfg.judge.comment_max_chars,
+            cache_enabled=cfg.judge.cache_enabled,
+            cache_path=cfg.judge.cache_path,
+            min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+            max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+            max_429_retries=cfg.judge.cerebras_max_429_retries,
+            jitter_sec=cfg.judge.cerebras_jitter_sec,
         )
 
     artifacts = run_qwen_judge_sensitivity(
@@ -590,6 +1103,15 @@ def judge_auth_check(config: str = "configs/first_experiment.yaml") -> None:
             base_url=cfg.judge.base_url,
             api_key_env=cfg.judge.api_key_env,
             timeout_sec=cfg.judge.timeout_sec,
+            max_retries=cfg.judge.max_retries,
+            max_completion_tokens=cfg.judge.max_completion_tokens,
+            comment_max_chars=cfg.judge.comment_max_chars,
+            cache_enabled=cfg.judge.cache_enabled,
+            cache_path=cfg.judge.cache_path,
+            min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+            max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+            max_429_retries=cfg.judge.cerebras_max_429_retries,
+            jitter_sec=cfg.judge.cerebras_jitter_sec,
         )
         typer.echo("Cerebras judge auth check succeeded.")
         typer.echo(f"Response preview: {text[:120].replace(chr(10), ' ')}")
@@ -618,6 +1140,15 @@ def judge_rubric_check(config: str = "configs/first_experiment.yaml") -> None:
         base_url=cfg.judge.base_url,
         api_key_env=cfg.judge.api_key_env,
         timeout_sec=cfg.judge.timeout_sec,
+        max_retries=cfg.judge.max_retries,
+        max_completion_tokens=cfg.judge.max_completion_tokens,
+        comment_max_chars=cfg.judge.comment_max_chars,
+        cache_enabled=cfg.judge.cache_enabled,
+        cache_path=cfg.judge.cache_path,
+        min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+        max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+        max_429_retries=cfg.judge.cerebras_max_429_retries,
+        jitter_sec=cfg.judge.cerebras_jitter_sec,
     )
     typer.echo("Cerebras judge rubric-format check succeeded.")
     typer.echo(f"Rubric sample: {score}")
@@ -653,12 +1184,30 @@ def judge_pairwise_sensitivity(
             base_url=cfg.judge.base_url,
             api_key_env=cfg.judge.api_key_env,
             timeout_sec=cfg.judge.timeout_sec,
+            max_retries=cfg.judge.max_retries,
+            max_completion_tokens=cfg.judge.max_completion_tokens,
+            comment_max_chars=cfg.judge.comment_max_chars,
+            cache_enabled=cfg.judge.cache_enabled,
+            cache_path=cfg.judge.cache_path,
+            min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+            max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+            max_429_retries=cfg.judge.cerebras_max_429_retries,
+            jitter_sec=cfg.judge.cerebras_jitter_sec,
         )
         _ = cerebras_judge_auth_smoke_check(
             model_name=qwen_model_name,
             base_url=cfg.judge.base_url,
             api_key_env=cfg.judge.api_key_env,
             timeout_sec=cfg.judge.timeout_sec,
+            max_retries=cfg.judge.max_retries,
+            max_completion_tokens=cfg.judge.max_completion_tokens,
+            comment_max_chars=cfg.judge.comment_max_chars,
+            cache_enabled=cfg.judge.cache_enabled,
+            cache_path=cfg.judge.cache_path,
+            min_request_interval_sec=cfg.judge.cerebras_min_request_interval_sec,
+            max_retry_after_sec=cfg.judge.cerebras_max_retry_after_sec,
+            max_429_retries=cfg.judge.cerebras_max_429_retries,
+            jitter_sec=cfg.judge.cerebras_jitter_sec,
         )
 
     artifacts = run_pairwise_judge_sensitivity(

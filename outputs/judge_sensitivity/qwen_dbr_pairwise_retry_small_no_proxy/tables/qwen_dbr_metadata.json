@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-04-30T13:58:47.424210",
+  "provider": "cerebras",
+  "model_name": "qwen-3-235b-a22b-instruct-2507",
+  "sample_size_requested": 3,
+  "sample_size_selected": 3,
+  "run_dirs": [
+    "outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+    "outputs\\runs\\dbr_confirmatory_seed212_20260428_230709",
+    "outputs\\runs\\dbr_confirmatory_seed213_20260430_115105"
+  ],
+  "sample_seed": 4242,
+  "branches": [
+    "pure_recycling",
+    "dbr_medium"
+  ],
+  "generation": 2,
+  "failures_count": 2,
+  "llama_aggregate_pedagogy_delta_dbr_minus_pure": 0.14611111111111116
+}

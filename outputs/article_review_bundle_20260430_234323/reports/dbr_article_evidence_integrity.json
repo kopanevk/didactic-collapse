@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-04-30T14:40:05.276939",
+  "run_dirs": [
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed211_20260428_222918",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed212_20260428_230709",
+    "C:\\Users\\kiris\\Documents\\New project\\outputs\\runs\\dbr_confirmatory_seed213_20260430_115105"
+  ],
+  "checks": {
+    "manual_template_has_no_branch_labels": true,
+    "manual_hidden_rows_equal_template_rows": true,
+    "collapse_rows": 9,
+    "mechanism_defect_rows": 45,
+    "mechanism_budget_rows": 45
+  }
+}

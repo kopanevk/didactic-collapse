@@ -1,0 +1,7 @@
+run_id,run_dir,seed,model_name,branch,generation,sample_count,accuracy_mean,pedagogical_score_mean,silent_error_rate
+dbr_confirmatory_seed211_20260428_222918,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed211_20260428_222918,211,qwen2.5:0.5b,dbr_medium,2,50,0.46,4.98,0.28
+dbr_confirmatory_seed211_20260428_222918,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed211_20260428_222918,211,qwen2.5:0.5b,pure_recycling,2,50,0.52,5.14,0.3
+dbr_confirmatory_seed212_20260428_230709,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,dbr_medium,2,50,0.4,4.7,0.22
+dbr_confirmatory_seed212_20260428_230709,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,qwen2.5:0.5b,pure_recycling,2,48,0.3125,5.041666666666667,0.2708333333333333
+dbr_confirmatory_seed213_20260430_115105,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,dbr_medium,2,50,0.58,5.42,0.18
+dbr_confirmatory_seed213_20260430_115105,C:\Users\kiris\Documents\New project\outputs\runs\dbr_confirmatory_seed213_20260430_115105,213,qwen2.5:0.5b,pure_recycling,2,50,0.42,4.48,0.3

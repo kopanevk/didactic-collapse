@@ -1,0 +1,3 @@
+audit_name,critical_count,high_count,medium_count,low_count,key_result,caveats
+artifact_integrity_20260430_144015,2,0,0,0,finding_count=2,Contains legacy summary mismatches in seed211/gen0 dbr branch.
+dbr_recompute_audit_20260430_132710,0,0,0,0,finding_count=0,Focused DBR recompute audit clean.

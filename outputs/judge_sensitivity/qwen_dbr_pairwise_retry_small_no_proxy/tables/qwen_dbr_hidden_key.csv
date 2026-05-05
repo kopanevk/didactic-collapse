@@ -1,0 +1,4 @@
+pair_id,source_run_dir,source_seed,run_id,generation,model_name,example_id,A_branch,B_branch
+dbr_pair_0001,outputs\runs\dbr_confirmatory_seed211_20260428_222918,211,dbr_confirmatory_seed211_20260428_222918,2,qwen2.5:0.5b,gsm8k_f82367dd28b2e04a,pure_recycling,dbr_medium
+dbr_pair_0002,outputs\runs\dbr_confirmatory_seed212_20260428_230709,212,dbr_confirmatory_seed212_20260428_230709,2,qwen2.5:0.5b,gsm8k_8c05d15a029834a5,dbr_medium,pure_recycling
+dbr_pair_0003,outputs\runs\dbr_confirmatory_seed213_20260430_115105,213,dbr_confirmatory_seed213_20260430_115105,2,qwen2.5:0.5b,gsm8k_9144453208693197,dbr_medium,pure_recycling

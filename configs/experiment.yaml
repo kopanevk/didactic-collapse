@@ -25,6 +25,14 @@ judge:
   timeout_sec: 120
   max_retries: 3
   request_delay_sec: 0.8
+  max_completion_tokens: 180
+  comment_max_chars: 120
+  cache_enabled: true
+  cache_path: outputs/cache/judge_cache.sqlite
+  cerebras_min_request_interval_sec: 0.8
+  cerebras_max_retry_after_sec: 60
+  cerebras_max_429_retries: 6
+  cerebras_jitter_sec: 0.75
 
 sampling:
   temperature: 0.2

@@ -1,0 +1,10 @@
+model_name,branch,generation,bucket,seed_count,count_before_mean,count_after_mean,rate_before_mean,rate_after_mean
+qwen2.5:0.5b,dbr_medium,0,long,1,66.0,64.0,0.66,0.6597938144329897
+qwen2.5:0.5b,dbr_medium,0,medium,1,34.0,33.0,0.34,0.3402061855670103
+qwen2.5:0.5b,dbr_medium,0,short,1,0.0,0.0,0.0,0.0
+qwen2.5:0.5b,dbr_medium,1,long,1,66.0,65.0,0.66,0.6565656565656566
+qwen2.5:0.5b,dbr_medium,1,medium,1,34.0,34.0,0.34,0.3434343434343434
+qwen2.5:0.5b,dbr_medium,1,short,1,0.0,0.0,0.0,0.0
+qwen2.5:0.5b,dbr_medium,2,long,1,66.0,64.0,0.66,0.6530612244897959
+qwen2.5:0.5b,dbr_medium,2,medium,1,34.0,34.0,0.34,0.3469387755102041
+qwen2.5:0.5b,dbr_medium,2,short,1,0.0,0.0,0.0,0.0

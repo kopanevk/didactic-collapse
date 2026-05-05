@@ -1,0 +1,12 @@
+metric,mean
+seed,222.0
+accuracy_gen0,0.4066666666666667
+accuracy_gen2,0.4066666666666667
+accuracy_delta_gen2_minus_gen0,1.850371707708594e-17
+pedagogy_gen0,4.666666666666667
+pedagogy_gen2,4.823333333333333
+pedagogy_delta_gen2_minus_gen0,0.15666666666666687
+silent_gen0,0.26
+silent_gen2,0.22999999999999998
+silent_delta_gen2_minus_gen0,-0.03
+sample_count_gen2,100.0

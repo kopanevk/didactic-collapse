@@ -1,0 +1,10 @@
+model_name,branch,generation,seed_count,run_count,evaluation_mode,accuracy_mean_mean,accuracy_mean_std,accuracy_mean_ci_low,accuracy_mean_ci_high,pedagogical_score_mean_mean,pedagogical_score_mean_std,pedagogical_score_mean_ci_low,pedagogical_score_mean_ci_high,silent_error_rate_mean,silent_error_rate_std,silent_error_rate_ci_low,silent_error_rate_ci_high,parse_failure_pred_rate_mean,parse_failure_pred_rate_std,parse_failure_pred_rate_ci_low,parse_failure_pred_rate_ci_high
+qwen2.5:0.5b,dbr_medium,0,1,1,inference_recycling_only,0.32,0.0,0.32,0.32,4.78,0.0,4.78,4.78,0.28,0.0,0.28,0.28,0.02,0.0,0.02,0.02
+qwen2.5:0.5b,dbr_medium,1,1,1,inference_recycling_only,0.42,0.0,0.42,0.42,4.92,0.0,4.92,4.92,0.32,0.0,0.32,0.32,0.02,0.0,0.02,0.02
+qwen2.5:0.5b,dbr_medium,2,1,1,inference_recycling_only,0.4,0.0,0.4,0.4,4.7,0.0,4.7,4.7,0.22,0.0,0.22,0.22,0.02,0.0,0.02,0.02
+qwen2.5:0.5b,pure_recycling,0,1,1,inference_recycling_only,0.32,0.0,0.32,0.32,4.82,0.0,4.82,4.82,0.26,0.0,0.26,0.26,0.02,0.0,0.02,0.02
+qwen2.5:0.5b,pure_recycling,1,1,1,inference_recycling_only,0.3,0.0,0.3,0.3,4.3,0.0,4.3,4.3,0.36,0.0,0.36,0.36,0.02,0.0,0.02,0.02
+qwen2.5:0.5b,pure_recycling,2,1,1,inference_recycling_only,0.3125,0.0,0.3125,0.3125,5.041666666666667,0.0,5.041666666666667,5.041666666666667,0.2708333333333333,0.0,0.2708333333333333,0.2708333333333333,0.04,0.0,0.04,0.04
+qwen2.5:0.5b,soft_pvf_noisy_keep,0,1,1,inference_recycling_only,0.4791666666666667,0.0,0.4791666666666667,0.4791666666666667,5.020833333333333,0.0,5.020833333333333,5.020833333333333,0.1666666666666666,0.0,0.1666666666666666,0.1666666666666666,0.0,0.0,0.0,0.0
+qwen2.5:0.5b,soft_pvf_noisy_keep,1,1,1,inference_recycling_only,0.36,0.0,0.36,0.36,4.56,0.0,4.56,4.56,0.3,0.0,0.3,0.3,0.06,0.0,0.06,0.06
+qwen2.5:0.5b,soft_pvf_noisy_keep,2,1,1,inference_recycling_only,0.38,0.0,0.38,0.38,4.86,0.0,4.86,4.86,0.34,0.0,0.34,0.34,0.02,0.0,0.02,0.02
