@@ -1,124 +1,55 @@
-﻿# Didactic Collapse
+# Дидактический коллапс в синтетических образовательных объяснениях
 
-Research pipeline for studying degradation of pedagogical quality under iterative training on synthetic data, with Human Anchoring interventions.
+Репозиторий содержит материалы исследования о том, как педагогические дефекты сохраняются при повторном использовании синтетических образовательных объяснений, созданных большой языковой моделью.
 
-## Quick start
+Работа посвящена не деградации параметров модели, а качеству повторно используемого корпуса объяснений. В исследовании рассматривается ситуация, когда модель генерирует учебные объяснения, затем часть этих объяснений отбирается и используется при формировании следующего поколения данных. Такой процесс называется рециклированием синтетических объяснений.
 
-```bash
-python -m venv .venv
-. .venv/Scripts/activate
-pip install -e .[dev]
-```
+## Что изучается
 
-```bash
-dc-run full --config configs/experiment.yaml
-```
+В исследовании вводится понятие **дидактического коллапса**.
 
-```bash
-dc-run pilot --config configs/pilot.yaml --sample-size 30 --dry-run true
-```
+Под дидактическим коллапсом понимается сохранение или распространение педагогически значимых дефектов при повторном использовании синтетических образовательных объяснений.
 
-```bash
-dc-run first-experiment --config configs/first_experiment.yaml --sample-size 50
-```
+В отличие от классического `model collapse`, здесь не анализируется ухудшение самой модели. Параметры модели не меняются. Анализируется то, какие объяснения переходят из одного поколения корпуса в следующее и какие дефекты вместе с ними сохраняются.
 
-```bash
-dc-run judge-auth-check --config configs/first_experiment.yaml
-dc-run first-experiment-resume --config configs/first_experiment.yaml --run-dir outputs/runs/first_real_experiment_YYYYMMDD_HHMMSS
-```
+## Основная идея
 
-### Cerebras judge auth
+Сгенерированное объяснение может выглядеть убедительно и даже содержать правильный финальный ответ, но при этом быть педагогически слабым:
 
-```bash
-# Windows PowerShell
-$env:CEREBRAS_API_KEY="your_key_here"
-```
+- пропускать важные шаги рассуждения;
+- нарушать логику решения;
+- иметь слабую структуру;
+- содержать скрытую педагогическую ошибку;
+- закреплять у учащегося неверный способ рассуждения.
 
-Judge auth smoke-check (uses the same client path as pipeline):
+Поэтому в работе отдельно анализируются:
 
-```bash
-dc-run judge-auth-check --config configs/first_experiment.yaml
-dc-run judge-rubric-check --config configs/first_experiment.yaml
-```
+- точность финального ответа;
+- педагогическая оценка объяснения;
+- скрытые педагогические ошибки;
+- ошибки разбора финального ответа;
+- слабое рассуждение;
+- слабая структура.
 
-Run or resume first experiment:
+## Метод: DBR
 
-```bash
-dc-run first-experiment --config configs/first_experiment.yaml --sample-size 50
-dc-run first-experiment-resume --config configs/first_experiment.yaml --run-dir outputs/runs/first_real_experiment_YYYYMMDD_HHMMSS
-```
+В работе предлагается и проверяется **дефектно-бюджетное рециклирование** — `DBR` (`defect-budget recycling`).
 
-Improved-generation small real run (strict final answer format):
+DBR — это способ отбора объяснений для следующего поколения корпуса. Он не удаляет все несовершенные ответы, а ограничивает допустимую долю отдельных типов дефектов.
 
-```bash
-dc-run first-experiment --config configs/first_experiment_v2.yaml --sample-size 30
-```
+Идея метода:
 
-Second real run preset (more informative signal, larger sample):
+1. для каждого объяснения вычисляются дефектные признаки;
+2. рассчитывается интегральная тяжесть дефектов;
+3. кандидаты упорядочиваются от менее дефектных к более дефектным;
+4. объяснения последовательно добавляются в новый корпус;
+5. при добавлении проверяется, не превышены ли дефектные бюджеты;
+6. если строгие бюджеты не позволяют сохранить нужный объём корпуса, ограничения ослабляются в фиксированном порядке;
+7. итоговый корпус и все нарушения бюджетов фиксируются для анализа.
 
-```bash
-dc-run first-experiment --config configs/second_real_experiment.yaml --sample-size 100
-```
+## Экспериментальная постановка
 
-Baseline presets for Human Anchoring sweeps:
+Эксперименты выполнялись на модели:
 
-```bash
-dc-run first-experiment --config configs/baseline_anchor10.yaml --sample-size 100
-dc-run first-experiment --config configs/baseline_anchor20.yaml --sample-size 100
-```
-
-Multi-seed baseline series (pure_recycling + anchor_10 + anchor_20):
-
-```bash
-dc-run baseline-series --config configs/baseline_series.yaml --sample-size 100 --seeds 42,43
-```
-
-Gen-2 baseline trajectory mode is enabled in baseline presets (`generations: 3`, i.e. Gen-0/1/2).
-
-Re-analyze an already finished set of runs:
-
-```bash
-dc-run baseline-series-analyze outputs/runs/<run_1> outputs/runs/<run_2> --out-dir outputs/baseline_series/<tag>/tables
-```
-
-Train-stage feasibility (Gen-0 -> train -> Gen-1) with explicit mode:
-
-```bash
-dc-run train-feasibility --config configs/train_feasibility.yaml --sample-size 50
-dc-run train-feasibility --config configs/train_feasibility.yaml --sample-size 50 --run-dir outputs/runs/train_feasibility_YYYYMMDD_HHMMSS
-```
-
-`configs/train_feasibility.yaml` is set to `experiment.mode: training_recycling_feasibility`.
-By default it uses `training.backend: command` and calls `scripts/train_feasibility_adapter.py`.
-That adapter is scaffolded and fails fast until you wire a real fine-tune routine.
-For non-scientific smoke checks only, you can pass `--stub` in adapter command and set `training.allow_stub_for_smoke: true`.
-
-Old vs new run comparison export:
-
-```bash
-dc-run first-experiment-compare \
-  outputs/runs/first_real_experiment_20260417_191914 \
-  outputs/runs/second_real_experiment_YYYYMMDD_HHMMSS
-```
-
-Expected first-experiment outputs:
-
-- `outputs/runs/<run_id>/tables/first_experiment_summary.csv`
-- `outputs/runs/<run_id>/tables/first_experiment_summary.parquet`
-- `outputs/runs/<run_id>/tables/qualitative_silent_error_candidates.csv`
-- `outputs/runs/<run_id>/tables/qualitative_silent_error_candidates.parquet`
-- `outputs/runs/<run_id>/tables/qualitative_silent_error_candidates.meta.json`
-- `outputs/runs/<run_id>/tables/metrics_by_generation.csv`
-- `outputs/runs/<run_id>/figures/accuracy_vs_generation.png`
-- `outputs/runs/<run_id>/figures/pedagogical_vs_generation.png`
-- `outputs/runs/<run_id>/figures/silent_error_vs_generation.png`
-
-Note: for real first-experiment runs, judge auth is validated before expensive stages. If `CEREBRAS_API_KEY` is missing, run fails fast before generation.
-Note: baseline-series outputs are explicitly marked as `inference_recycling_only` and are not equivalent to full retraining dynamics.
-
-## Core ideas
-
-- Branches: `pure_recycling`, `anchor_5`, `anchor_10`
-- Generations: `gen0 -> gen1 -> gen2 -> gen3`
-- Metrics: accuracy, pedagogical score, silent error rate
-- Backends: local generation via Ollama, judge via pluggable API client
+```text
+qwen2.5:0.5b
